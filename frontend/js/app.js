@@ -81,7 +81,19 @@ window.renderizarCardapio = function() {
         grade.className = 'menu-grid-premium';
 
         categoriasAgrupadas[categoriaNome].forEach(produto => {
-            const precoFormatado = produto.preco.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            // 1. Proteção: Se o produto não tiver preço no banco, assume 0 para não dar erro
+            const precoAtual = produto.preco || 0;
+            
+            // 2. Formata o preço base
+            let textoPreco = precoAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            
+            // 3. Lógica do "A partir de" para preços zerados com opções de tamanho
+            if (precoAtual === 0 && produto.opcoes && produto.opcoes.length > 0) {
+                const menorPreco = Math.min(...produto.opcoes.map(opt => opt.preco));
+                textoPreco = `<span style="font-size: 11px; font-weight: normal; margin-right: 4px;">A partir de</span>R$ ${menorPreco.toFixed(2).replace('.', ',')}`;
+            }
+
             const fotoUrl = (produto.imagem && produto.imagem.startsWith('http')) ? produto.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
             
             grade.innerHTML += `
@@ -91,7 +103,7 @@ window.renderizarCardapio = function() {
                             <h3 class="card-prem-titulo">${produto.nome}</h3>
                             <p class="card-prem-desc">${produto.ingredientes ? produto.ingredientes.join(', ') : 'Sem descrição'}</p>
                         </div>
-                        <span class="card-prem-preco">${precoFormatado}</span>
+                        <span class="card-prem-preco" style="display: flex; align-items: center;">${textoPreco}</span>
                     </div>
                     <div class="card-prem-img-box">
                         <img src="${fotoUrl}" alt="Foto" class="card-prem-img">
@@ -313,9 +325,10 @@ function atualizarTelaCarrinho() {
                     <div class="item-carrinho-info" style="font-weight: bold;">
                         ${item.quantidade}x ${item.nome}
                     </div>
-                    <div class="item-carrinho-preco">
+                    <div class="item-carrinho-preco" style="display: flex; gap: 10px; align-items: center;">
                         ${precoFormatado}
-                        <button class="btn-remover" onclick="removerDoCarrinho(${index})">🗑️</button>
+                        <button class="btn-editar" onclick="editarItemCarrinho(${index})" title="Editar Lanche" style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 0;">✏️</button>
+                        <button class="btn-remover" onclick="removerDoCarrinho(${index})" title="Remover" style="background: none; border: none; font-size: 18px; cursor: pointer; padding: 0;">🗑️</button>
                     </div>
                 </div>
                 ${htmlObs}
@@ -557,38 +570,122 @@ function gerarPayloadPix(chave, nome, cidade, valor) {
 // ==========================================
 // 6. MOTOR DE BUSCA (BARRA DE PESQUISA)
 window.filtrarCardapio = function() {
-    // 1. Pega no texto que o cliente digitou e transforma em minúsculas
-    const termoPesquisa = document.getElementById('input-pesquisa').value.toLowerCase();
+    const inputPesquisa = document.getElementById('input-pesquisa');
+    if(!inputPesquisa) return;
+
+    // 1. Pega no texto, converte para minúsculas e remove ACENTOS
+    const termoPesquisa = inputPesquisa.value.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
     
-    // 2. Pega em todas as categorias e em todos os grupos de lanches (grades)
     const titulosCategorias = document.querySelectorAll('.titulo-seccao');
     const gradesDeProdutos = document.querySelectorAll('.menu-grid-premium');
 
-    // 3. Verifica grade por grade
     gradesDeProdutos.forEach((grade, index) => {
         const cartoes = grade.querySelectorAll('.card-premium');
-        let temLancheVisivelNestaCategoria = false;
+        let temLancheVisivel = false;
 
         cartoes.forEach(cartao => {
-            const tituloLanche = cartao.querySelector('.card-prem-titulo').innerText.toLowerCase();
-            const descLanche = cartao.querySelector('.card-prem-desc').innerText.toLowerCase();
+            // Usamos textContent em vez de innerText, pois é mais seguro e rápido
+            const elTitulo = cartao.querySelector('.card-prem-titulo');
+            const elDesc = cartao.querySelector('.card-prem-desc');
             
-            // Se o nome ou os ingredientes tiverem a palavra pesquisada
+            const tituloLanche = elTitulo ? elTitulo.textContent.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "") : "";
+            const descLanche = elDesc ? elDesc.textContent.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "") : "";
+            
+            // Compara se o que foi digitado existe no título ou nos ingredientes
             if(tituloLanche.includes(termoPesquisa) || descLanche.includes(termoPesquisa)) {
-                cartao.style.display = 'flex'; // Mostra o lanche
-                temLancheVisivelNestaCategoria = true; // Avisa que esta categoria tem itens
+                cartao.style.display = ''; // Deixa vazio para voltar ao CSS original e não quebrar o design!
+                temLancheVisivel = true;
             } else {
-                cartao.style.display = 'none'; // Esconde o lanche
+                cartao.style.display = 'none'; // Esconde quem não bateu com a pesquisa
             }
         });
 
-        // 4. Se a categoria não tiver nenhum lanche correspondente à pesquisa, esconde o título dela também!
-        if(temLancheVisivelNestaCategoria) {
-            titulosCategorias[index].style.display = 'block';
+        // Oculta a categoria inteira se não houver nenhum lanche visível nela
+        if(temLancheVisivel) {
+            if(titulosCategorias[index]) titulosCategorias[index].style.display = 'block';
             grade.style.display = 'grid'; 
         } else {
-            titulosCategorias[index].style.display = 'none';
+            if(titulosCategorias[index]) titulosCategorias[index].style.display = 'none';
             grade.style.display = 'none';
         }
     });
+}
+
+// ==========================================
+// 7. LÓGICA DE EDITAR ITEM DIRETO DO CARRINHO
+window.editarItemCarrinho = function(index) {
+    const itemDoCarrinho = carrinho[index];
+    
+    // 1. Abre o modal com a estrutura original do lanche
+    abrirModalProduto(itemDoCarrinho.idProdutoOriginal);
+    
+    // 2. Espera uns milissegundos para o HTML do modal carregar na tela e então preenche os dados
+    setTimeout(() => {
+        // Marca o tamanho que o cliente escolheu
+        const radiosTamanho = document.querySelectorAll('input[name="opcao-base"]');
+        radiosTamanho.forEach(radio => {
+            if (itemDoCarrinho.listaAdicionais.includes("Tamanho: " + radio.getAttribute('data-nome'))) {
+                radio.checked = true;
+            }
+        });
+
+        // Marca os adicionais que o cliente escolheu
+        const checkboxes = document.querySelectorAll('#lista-adicionais input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            if (itemDoCarrinho.listaAdicionais.includes(cb.getAttribute('data-nome'))) {
+                cb.checked = true;
+            }
+        });
+
+        // Preenche a observação
+        document.getElementById('prod-obs').value = itemDoCarrinho.obs || "";
+
+        // 3. Modifica o botão do modal para SALVAR EDIÇÃO em vez de Adicionar Novo
+        const btnConfirmar = document.getElementById('btn-add-carrinho-final');
+        btnConfirmar.innerHTML = `Atualizar Item - <span id="prod-preco-total"></span>`;
+        // Troca a função de clique para a função de salvar a edição
+        btnConfirmar.onclick = function() {
+            salvarEdicaoCarrinho(index);
+        };
+
+        // Recalcula o preço na tela com as caixinhas marcadas
+        atualizarPrecoModal();
+        
+        // Esconde a gaveta do carrinho para o cliente conseguir mexer no modal
+        fecharCarrinho();
+    }, 50); // Atraso de 50ms para garantir que o DOM renderizou
+}
+
+window.salvarEdicaoCarrinho = function(index) {
+    const adicionaisEscolhidos = [];
+    let precoBase = produtoSelecionado.preco; 
+    let precoAdicionais = 0;
+
+    // Recalcula o tamanho
+    const radioOpcao = document.querySelector('input[name="opcao-base"]:checked');
+    if(radioOpcao) {
+        precoBase = parseFloat(radioOpcao.value);
+        adicionaisEscolhidos.push("Tamanho: " + radioOpcao.getAttribute('data-nome'));
+    }
+
+    // Recalcula os adicionais marcados
+    const checkboxes = document.querySelectorAll('#lista-adicionais input[type="checkbox"]:checked');
+    checkboxes.forEach(cb => {
+        adicionaisEscolhidos.push(cb.getAttribute('data-nome'));
+        precoAdicionais += parseFloat(cb.getAttribute('data-preco'));
+    });
+
+    const obsDoCliente = document.getElementById('prod-obs').value.trim();
+    const precoFinalItem = precoBase + precoAdicionais; 
+
+    // ATUALIZA o item existente na mesma posição da lista do carrinho
+    carrinho[index].nome = produtoSelecionado.nome + (adicionaisEscolhidos.length > 0 ? " (Personalizado)" : "");
+    carrinho[index].preco = precoFinalItem;
+    carrinho[index].obs = obsDoCliente;
+    carrinho[index].listaAdicionais = adicionaisEscolhidos;
+
+    // Atualiza a tela, fecha o modal e reabre o carrinho para o cliente ver o resultado
+    atualizarTelaCarrinho();
+    fecharModalProduto();
+    setTimeout(() => abrirCarrinho(), 350); // Reabre o carrinho de forma fluida
 }
