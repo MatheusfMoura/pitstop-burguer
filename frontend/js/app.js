@@ -578,6 +578,14 @@ window.filtrarCardapio = function() {
     
     const titulosCategorias = document.querySelectorAll('.titulo-seccao');
     const gradesDeProdutos = document.querySelectorAll('.menu-grid-premium');
+    
+    // Pega a barra de navegação rolável lá do topo
+    const barraCategorias = document.getElementById('barra-categorias'); 
+
+    // Se o cliente digitou algo, esconde a barra superior para não confundir
+    if (barraCategorias) {
+        barraCategorias.style.display = textoLimpo !== "" ? 'none' : 'flex'; 
+    }
 
     gradesDeProdutos.forEach((grade, index) => {
         const cartoes = grade.querySelectorAll('.card-premium');
@@ -594,11 +602,13 @@ window.filtrarCardapio = function() {
             if (textoLimpo === "") {
                 corresponde = true;
             } else {
-                corresponde = termosPesquisa.every(termo => tituloLanche.includes(termo) || descLanche.includes(termo));
+                // Filtra espaços vazios e obriga a ter todas as palavras digitadas
+                const termosValidos = termosPesquisa.filter(t => t !== "");
+                corresponde = termosValidos.every(termo => tituloLanche.includes(termo) || descLanche.includes(termo));
             }
             
             if(corresponde) {
-                cartao.style.display = ''; // Mantém o design original intacto!
+                cartao.style.display = ''; 
                 temLancheVisivel = true;
             } else {
                 cartao.style.display = 'none';
@@ -606,7 +616,10 @@ window.filtrarCardapio = function() {
         });
 
         if(temLancheVisivel) {
-            if(titulosCategorias[index]) titulosCategorias[index].style.display = '';
+            // A MÁGICA: Se estiver a pesquisar, esconde o título "Hamburguers/Porções"
+            if(titulosCategorias[index]) {
+                titulosCategorias[index].style.display = textoLimpo !== "" ? 'none' : '';
+            }
             grade.style.display = ''; 
         } else {
             if(titulosCategorias[index]) titulosCategorias[index].style.display = 'none';
