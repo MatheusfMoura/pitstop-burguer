@@ -568,13 +568,13 @@ function gerarPayloadPix(chave, nome, cidade, valor) {
 }
 
 // ==========================================
-// 6. MOTOR DE BUSCA (BARRA DE PESQUISA)
+// 6. MOTOR DE BUSCA (BARRA DE PESQUISA INTELIGENTE)
 window.filtrarCardapio = function() {
     const inputPesquisa = document.getElementById('input-pesquisa');
     if(!inputPesquisa) return;
 
-    // 1. Pega no texto, converte para minúsculas e remove ACENTOS
-    const termoPesquisa = inputPesquisa.value.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    const textoLimpo = inputPesquisa.value.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    const termosPesquisa = textoLimpo.split(/\s+/);
     
     const titulosCategorias = document.querySelectorAll('.titulo-seccao');
     const gradesDeProdutos = document.querySelectorAll('.menu-grid-premium');
@@ -584,26 +584,30 @@ window.filtrarCardapio = function() {
         let temLancheVisivel = false;
 
         cartoes.forEach(cartao => {
-            // Usamos textContent em vez de innerText, pois é mais seguro e rápido
             const elTitulo = cartao.querySelector('.card-prem-titulo');
             const elDesc = cartao.querySelector('.card-prem-desc');
             
             const tituloLanche = elTitulo ? elTitulo.textContent.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "") : "";
             const descLanche = elDesc ? elDesc.textContent.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "") : "";
             
-            // Compara se o que foi digitado existe no título ou nos ingredientes
-            if(tituloLanche.includes(termoPesquisa) || descLanche.includes(termoPesquisa)) {
-                cartao.style.display = ''; // Deixa vazio para voltar ao CSS original e não quebrar o design!
+            let corresponde = false;
+            if (textoLimpo === "") {
+                corresponde = true;
+            } else {
+                corresponde = termosPesquisa.every(termo => tituloLanche.includes(termo) || descLanche.includes(termo));
+            }
+            
+            if(corresponde) {
+                cartao.style.display = ''; // Mantém o design original intacto!
                 temLancheVisivel = true;
             } else {
-                cartao.style.display = 'none'; // Esconde quem não bateu com a pesquisa
+                cartao.style.display = 'none';
             }
         });
 
-        // Oculta a categoria inteira se não houver nenhum lanche visível nela
         if(temLancheVisivel) {
-            if(titulosCategorias[index]) titulosCategorias[index].style.display = 'block';
-            grade.style.display = 'grid'; 
+            if(titulosCategorias[index]) titulosCategorias[index].style.display = '';
+            grade.style.display = ''; 
         } else {
             if(titulosCategorias[index]) titulosCategorias[index].style.display = 'none';
             grade.style.display = 'none';
@@ -615,13 +619,9 @@ window.filtrarCardapio = function() {
 // 7. LÓGICA DE EDITAR ITEM DIRETO DO CARRINHO
 window.editarItemCarrinho = function(index) {
     const itemDoCarrinho = carrinho[index];
-    
-    // 1. Abre o modal com a estrutura original do lanche
     abrirModalProduto(itemDoCarrinho.idProdutoOriginal);
     
-    // 2. Espera uns milissegundos para o HTML do modal carregar na tela e então preenche os dados
     setTimeout(() => {
-        // Marca o tamanho que o cliente escolheu
         const radiosTamanho = document.querySelectorAll('input[name="opcao-base"]');
         radiosTamanho.forEach(radio => {
             if (itemDoCarrinho.listaAdicionais.includes("Tamanho: " + radio.getAttribute('data-nome'))) {
@@ -629,7 +629,6 @@ window.editarItemCarrinho = function(index) {
             }
         });
 
-        // Marca os adicionais que o cliente escolheu
         const checkboxes = document.querySelectorAll('#lista-adicionais input[type="checkbox"]');
         checkboxes.forEach(cb => {
             if (itemDoCarrinho.listaAdicionais.includes(cb.getAttribute('data-nome'))) {
@@ -637,23 +636,45 @@ window.editarItemCarrinho = function(index) {
             }
         });
 
-        // Preenche a observação
         document.getElementById('prod-obs').value = itemDoCarrinho.obs || "";
 
-        // 3. Modifica o botão do modal para SALVAR EDIÇÃO em vez de Adicionar Novo
         const btnConfirmar = document.getElementById('btn-add-carrinho-final');
         btnConfirmar.innerHTML = `Atualizar Item - <span id="prod-preco-total"></span>`;
-        // Troca a função de clique para a função de salvar a edição
-        btnConfirmar.onclick = function() {
-            salvarEdicaoCarrinho(index);
-        };
+        btnConfirmar.onclick = function() { salvarEdicaoCarrinho(index); };
 
-        // Recalcula o preço na tela com as caixinhas marcadas
         atualizarPrecoModal();
-        
-        // Esconde a gaveta do carrinho para o cliente conseguir mexer no modal
         fecharCarrinho();
-    }, 50); // Atraso de 50ms para garantir que o DOM renderizou
+    }, 50);
+}
+
+window.salvarEdicaoCarrinho = function(index) {
+    const adicionaisEscolhidos = [];
+    let precoBase = produtoSelecionado.preco; 
+    let precoAdicionais = 0;
+
+    const radioOpcao = document.querySelector('input[name="opcao-base"]:checked');
+    if(radioOpcao) {
+        precoBase = parseFloat(radioOpcao.value);
+        adicionaisEscolhidos.push("Tamanho: " + radioOpcao.getAttribute('data-nome'));
+    }
+
+    const checkboxes = document.querySelectorAll('#lista-adicionais input[type="checkbox"]:checked');
+    checkboxes.forEach(cb => {
+        adicionaisEscolhidos.push(cb.getAttribute('data-nome'));
+        precoAdicionais += parseFloat(cb.getAttribute('data-preco'));
+    });
+
+    const obsDoCliente = document.getElementById('prod-obs').value.trim();
+    const precoFinalItem = precoBase + precoAdicionais; 
+
+    carrinho[index].nome = produtoSelecionado.nome + (adicionaisEscolhidos.length > 0 ? " (Personalizado)" : "");
+    carrinho[index].preco = precoFinalItem;
+    carrinho[index].obs = obsDoCliente;
+    carrinho[index].listaAdicionais = adicionaisEscolhidos;
+
+    atualizarTelaCarrinho();
+    fecharModalProduto();
+    setTimeout(() => abrirCarrinho(), 350); 
 }
 
 window.salvarEdicaoCarrinho = function(index) {
