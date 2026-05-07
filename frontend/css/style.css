@@ -1,0 +1,764 @@
+:root {
+    /* Paleta Dark Mode Premium */
+    --bg-color: #121212;
+    --surface-color: #1E1E1E;
+    --text-primary: #E0E0E0;
+    --text-secondary: #A0A0A0;
+    --accent-color: #FF9800; 
+    
+    --input-padding: 8px 12px;
+    --border-radius: 6px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/*RESPONSIVIDADE*/
+html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none; /* MÁGICA: Proíbe o navegador de "balançar" a tela para os lados num celular real */
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    width: 100%;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding-bottom: 80px; 
+}
+
+/* --- ESTILOS DO CARDÁPIO PREMIUM (DARK MODE) --- */
+.hero-banner {
+    position: relative;
+    height: 250px; /* Um pouco mais alto para dar imponência */
+    background-image: url('https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=1000&auto=format&fit=crop');
+    background-size: cover;
+    background-position: center 80%;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+    color: white;
+    border-bottom-left-radius: 24px;
+    border-bottom-right-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    margin-bottom: 4px;
+}
+
+.hero-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: linear-gradient(to top, rgba(18,18,18,1) 0%, rgba(18,18,18,0.5) 50%, rgba(18,18,18,0.1) 100%);
+    border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;
+}
+
+.hero-content {
+    position: relative; 
+    z-index: 2; 
+    width: 100%; 
+    background: rgba(30, 30, 30, 0.65); /* Fundo semi-transparente */
+    backdrop-filter: blur(12px); /* Efeito Vidro Fosco */
+    -webkit-backdrop-filter: blur(12px);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex; 
+    align-items: center; 
+    gap: 15px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+.hero-logo { 
+    background: var(--surface-color); 
+    width: 75px; 
+    height: 75px; 
+    border-radius: 50%; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    font-size: 38px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); 
+    border: 2px solid var(--accent-color); 
+    flex-shrink: 0;
+}
+
+.hero-text { flex: 1; }
+.hero-text h1 { margin: 0 0 4px 0; font-size: 22px; font-weight: 800; letter-spacing: 0.5px; color: #fff; }
+.hero-text p { margin: 0 0 10px 0; font-size: 13px; color: #bbb; }
+
+.hero-badges-container { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.hero-badge-glass {
+    background: rgba(0,0,0,0.5);
+    color: #ddd;
+    padding: 6px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Animação do Ponto Verde de "Aberto" */
+.dot-pulse {
+    width: 8px; height: 8px; background-color: #2ed573; border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.7);
+    animation: pulse-green 1.5s infinite;
+}
+
+@keyframes pulse-green {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(46, 213, 115, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(46, 213, 115, 0); }
+}
+
+.menu-grid-premium { 
+    display: grid; 
+    grid-template-columns: 1fr; /* Mobile (1 coluna) */
+    gap: 16px; 
+    padding: 0 16px; 
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.card-premium {
+    background-color: var(--surface-color); 
+    border-radius: 12px; 
+    padding: 15px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2); 
+    border: 1px solid #333; 
+    cursor: pointer; 
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.card-premium:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.4); }
+
+.card-prem-info { flex: 1; padding-right: 15px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+.card-prem-titulo { margin: 0 0 8px 0; font-size: 16px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-prem-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-prem-preco { font-weight: bold; color: var(--accent-color); font-size: 16px; }
+
+.card-prem-img-box { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+.card-prem-img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+
+/* Regra para telas maiores (Computador/Tablet) */
+@media (min-width: 800px) {
+    body { padding-right: 320px; }
+    .menu-grid-premium { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+}
+
+/* --- CARRINHO LATERAL/RODAPÉ (MOBILE BOTTOM SHEET) --- */
+.carrinho-container {
+    width: 100%;
+    background-color: var(--surface-color);
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #333;
+    
+    /* Gaveta Flutuante */
+    position: fixed;
+    bottom: -100%; /* Começa escondido para baixo */
+    left: 0;
+    max-height: 85vh; /* Ocupa no máximo 85% da tela para o cliente não se perder */
+    z-index: 200;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    transition: bottom 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.7);
+}
+
+.carrinho-container.aberto {
+    bottom: 0; /* Quando ganha itens, a gaveta do carrinho sobe! */
+}
+
+.carrinho-header {
+    padding: 20px;
+    border-bottom: 1px solid #333;
+    background-color: var(--bg-color);
+}
+
+.carrinho-itens {
+    flex: 1; 
+    overflow-y: auto; 
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 400px; /* Limite de altura no mobile */
+}
+
+.item-carrinho {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-color);
+    padding: 10px;
+    border-radius: var(--border-radius);
+    font-size: 0.9rem;
+    width: 100%;
+}
+
+.item-carrinho-info {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 10px;
+}
+
+.item-carrinho-preco {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    color: var(--accent-color);
+    white-space: nowrap;
+}
+
+.btn-remover {
+    background: none;
+    border: none;
+    color: #ff4d4d;
+    cursor: pointer;
+    font-size: 1.1rem;
+}
+
+.carrinho-footer {
+    padding: 20px;
+    border-top: 1px solid #333;
+    background-color: var(--bg-color);
+    width: 100%;
+}
+
+.carrinho-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 16px;
+}
+
+.btn-finalizar {
+    width: 100%;
+    background-color: #4CAF50; 
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: var(--border-radius);
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-finalizar:hover {
+    background-color: #45a049;
+}
+
+/* --- ESTILOS DO MODAL DE CHECKOUT E RECIBO --- */
+.modal-oculto {
+    display: none; 
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.8); 
+    z-index: 200; 
+    justify-content: center;
+    align-items: center;
+    padding: 15px; /* Evita colar nas bordas do celular */
+}
+
+.modal-conteudo {
+    background-color: var(--surface-color);
+    padding: 24px;
+    border-radius: var(--border-radius);
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    max-height: 90vh; /* Se a tela for pequena, permite rolar dentro do modal */
+    overflow-y: auto;
+}
+
+.fechar-modal {
+    position: absolute;
+    top: 12px; right: 16px;
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.fechar-modal:hover {
+    color: #ff4d4d;
+}
+
+.form-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.form-grupo label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.form-grupo input, .form-grupo select, .form-grupo textarea {
+    width: 100%;
+    padding: var(--input-padding);
+    border-radius: var(--border-radius);
+    border: 1px solid #444;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-size: 1rem;
+    outline: none;
+    font-family: inherit;
+}
+
+.form-grupo textarea {
+    resize: none; 
+}
+
+.form-grupo input:focus, .form-grupo select:focus, .form-grupo textarea:focus {
+    border-color: var(--accent-color);
+}
+
+.btn-confirmar {
+    width: 100%;
+    margin-top: 10px;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: var(--border-radius);
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-confirmar:hover {
+    background-color: #e68a00;
+}
+
+@media (min-width: 800px) {
+    body { padding-right: 320px; }
+    
+    .carrinho-container {
+        position: fixed;
+        top: 0;
+        bottom: 0; 
+        left: auto; /* CORREÇÃO CRUCIAL: Obriga o carrinho a largar a esquerda da tela! */
+        right: 0;
+        width: 320px;
+        height: 100vh;
+        max-height: 100vh;
+        border-left: 1px solid #333;
+        border-top: none;
+        border-radius: 0; 
+        z-index: 100;
+        box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+    }
+    
+    .carrinho-itens { max-height: none; }
+    #btn-fechar-carrinho { display: none; } 
+    #carrinho-overlay { display: none !important; } 
+}
+
+/* --- ESTILOS DO MODAL DE PRODUTO (ADICIONAIS) --- */
+.secao-modal h4 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.item-adicional {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a2a;
+    padding: 10px;
+    border-radius: 6px;
+}
+
+.item-adicional label {
+    cursor: pointer;
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+.item-adicional input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--accent-color);
+}
+
+/* Centralizar emoji e cabeçalho do produto */
+#detalhe-produto-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* BARRA DE CATEGORIAS (FIXA E COM EFEITO VIDRO) */
+.categoria-nav {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    
+    /* Efeito Vidro Fosco (Glassmorphism) */
+    background-color: rgba(18, 18, 18, 0.85); 
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px);
+    
+    overflow-x: auto;
+    white-space: nowrap;
+    
+    /* Mágica para grudar no topo */
+    position: sticky;
+    top: -1px; /* O -1px garante que ela não descole por erros do navegador */
+    z-index: 100;
+    
+    border-bottom: 1px solid #333;
+    scrollbar-width: none; 
+}
+.categoria-nav::-webkit-scrollbar { display: none; }
+
+.btn-cat {
+    padding: 8px 16px;
+    background: rgba(30, 30, 30, 0.4); /* Fundo bem mais escuro/transparente */
+    color: #666; /* Texto mais apagado */
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid #222;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.btn-cat.ativo {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: scale(1.05); /* Dá um leve zoom no botão ativo */
+    box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3); /* Brilho laranja ao redor */
+}
+
+/* Ajuste no título da categoria */
+.titulo-seccao {
+    color: var(--text-primary);
+    margin: 30px 16px 15px 16px;
+    border-left: 4px solid var(--accent-color);
+    padding-left: 10px;
+    font-size: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    scroll-margin-top: 70px;
+}
+
+/* BOTÃO FLUTUANTE (MOBILE) */
+#btn-flutuante-carrinho {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background-color: var(--accent-color);
+    color: white;
+    padding: 15px 20px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+    z-index: 150;
+    cursor: pointer;
+    transition: 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.btn-flutuante-oculto {
+    opacity: 0;
+    pointer-events: none;
+    bottom: -80px !important;
+}
+/* Esconde no PC, pois o carrinho já está na lateral */
+@media (min-width: 800px) {
+    #btn-flutuante-carrinho { display: none !important; }
+}
+
+/* RASTREADOR FLUTUANTE PREMIUM */
+.rastreador-flutuante {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: #1a1a1a;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid #333;
+    z-index: 160; 
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+    animation: slideUp 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    
+    /* Garante que a subida/descida dinâmica seja suave */
+    transition: bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.2s, border-color 0.2s;
+}
+
+/* Classe acionada pelo JS quando o botão do carrinho aparece */
+.rastreador-flutuante.elevado {
+    bottom: 90px; /* Sobe 90px para dar o espaço exato do botão laranja */
+}
+
+/* Proteção para o PC: O carrinho fica na lateral, então o rastreador não precisa subir */
+@media (min-width: 800px) {
+    .rastreador-flutuante.elevado {
+        bottom: 20px; 
+    }
+}
+
+.rastreador-flutuante:hover {
+    background: #222;
+    border-color: #444;
+}
+
+@keyframes slideUp {
+    from { bottom: -100px; opacity: 0; }
+    to { bottom: 20px; opacity: 1; }
+}
+
+/* Se o PC estiver aberto, o rastreador flutua no canto inferior direito */
+@media (min-width: 800px) {
+    .rastreador-flutuante {
+        left: auto;
+        right: 340px; /* Fica ao lado do carrinho lateral */
+        transform: none;
+        width: 350px;
+    }
+}
+
+/* --- PRODUTO BOTTOM SHEET (MOBILE) --- */
+.produto-bottom-sheet {
+    position: fixed;
+    bottom: -100%;
+    left: 0;
+    width: 100%;
+    max-height: 90vh;
+    background-color: var(--surface-color);
+    z-index: 9999;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    transition: bottom 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 -5px 25px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.produto-bottom-sheet.aberto {
+    bottom: 0;
+}
+
+.prod-capa {
+    width: 100%;
+    height: 220px;
+    background-color: #111;
+    position: relative;
+}
+
+.prod-capa img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.prod-sheet-conteudo {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.fechar-sheet {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 22px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- REFINAMENTOS DESKTOP (PC) --- */
+@media (min-width: 800px) {
+    body { 
+        padding-right: 320px; /* Protege a área do carrinho */
+        padding-bottom: 0; /* Limpa espaçamento do mobile */
+    }
+    
+    .hero-banner {
+        border-radius: 0; /* Banner reto fica melhor no PC */
+        margin-bottom: 40px;
+    }
+    
+    /* O Bottom Sheet vira um Modal Elegante no PC */
+    .produto-bottom-sheet {
+        bottom: auto !important;
+        top: 50%;
+        left: calc(50% - 160px); /* Centraliza perfeitamente descontando o carrinho */
+        transform: translate(-50%, -50%) scale(0.9);
+        width: 480px;
+        max-height: 85vh;
+        border-radius: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.3s ease;
+    }
+    
+    .produto-bottom-sheet.aberto {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+        pointer-events: all;
+    }
+}
+
+/* --- SKELETON LOADING (EFEITO DE CARREGAMENTO) --- */
+.skeleton {
+    background: linear-gradient(90deg, #1e1e1e 25%, #2a2a2a 50%, #1e1e1e 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Estrutura do Cartão Fantasma */
+.card-skeleton {
+    background-color: var(--surface-color);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #333;
+    margin-bottom: 16px;
+}
+
+.skel-info { flex: 1; padding-right: 15px; display: flex; flex-direction: column; gap: 10px; }
+.skel-title { width: 60%; height: 20px; }
+.skel-desc { width: 100%; height: 12px; margin-bottom: 4px; }
+.skel-desc-short { width: 80%; height: 12px; }
+.skel-price { width: 30%; height: 20px; margin-top: 5px; }
+.skel-img { width: 110px; height: 110px; border-radius: 10px; flex-shrink: 0; }
+
+/* --- BARRA DE PESQUISA --- */
+.pesquisa-container {
+    padding: 0 16px 15px 16px;
+    margin-top: 15px; /* Puxa um pouco para cima para colar no banner */
+}
+
+.pesquisa-box {
+    display: flex;
+    align-items: center;
+    background-color: var(--surface-color);
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 0 12px;
+    transition: all 0.3s ease;
+}
+
+.pesquisa-box:focus-within {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.15); /* Brilho laranja suave */
+}
+
+.pesquisa-icone {
+    font-size: 16px;
+    color: #666;
+    margin-right: 8px;
+}
+
+#input-pesquisa {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 15px;
+    padding: 12px 0;
+    outline: none;
+}
+
+#input-pesquisa::placeholder {
+    color: #666;
+}
+
+/* --- OPÇÕES DE ESCOLHA ÚNICA (TAMANHOS) --- */
+.grupo-opcoes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+.opcao-radio {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #2a2a2a;
+    padding: 12px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: 0.2s;
+}
+
+.opcao-radio:has(input:checked) {
+    border-color: var(--accent-color);
+    background: rgba(255, 152, 0, 0.05);
+}
+
+.opcao-radio input[type="radio"] {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent-color);
+}
+
+.opcao-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.opcao-nome {
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.opcao-preco {
+    font-size: 13px;
+    color: var(--accent-color);
+}

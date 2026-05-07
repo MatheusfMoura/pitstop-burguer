@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardápio | Pitstop Burguer</title>
+    <link rel="stylesheet" href="./css/style.css">
+</head>
+<body style="padding-bottom: 240px;"> 
+    <header class="hero-banner">
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="hero-logo">🍔</div>
+            <div class="hero-text">
+                <h1>Pitstop Burguer</h1>
+                <p>Hamburgueria Artesanal</p>
+                <div class="hero-badges-container">
+                    <span class="hero-badge-glass" id="badge-status-loja"><div class="dot-pulse"></div> Aberto</span>
+                    <span class="hero-badge-glass">🛵 30-45 min</span>
+                    <span class="hero-badge-glass" style="color: #f1c40f;">⭐ 4.9</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="pesquisa-container">
+        <div class="pesquisa-box">
+            <span class="pesquisa-icone">🔍</span>
+            <input type="text" id="input-pesquisa" placeholder="Buscar lanche, ingrediente..." onkeyup="filtrarCardapio()">
+        </div>
+    </div>
+    
+    <nav id="barra-categorias" class="categoria-nav">
+        </nav>
+    
+    <main id="menu-container">
+        </main>
+
+    <div id="btn-flutuante-carrinho" class="btn-flutuante-oculto" onclick="abrirCarrinho()">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 6px;" id="flutuante-qtd">0</span>
+            <span>Ver Carrinho</span>
+        </div>
+        <strong id="flutuante-total">R$ 0,00</strong>
+    </div>
+
+    <div id="rastreador-integrado" class="rastreador-flutuante" onclick="abrirResumoPedido()" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 style="margin: 0; color: #ff4757; font-size: 13px;">Pedido <span id="track-id" style="color: #888; font-size: 11px;"></span></h4>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 10px; color: var(--text-secondary); text-transform: uppercase;">Recibo ➔</span>
+                <button onclick="encerrarRastreador(event)" style="background: rgba(255,255,255,0.1); border: none; color: #fff; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">&times;</button>
+            </div>
+        </div>
+        
+        <p id="track-itens" style="margin: 0 0 10px 0; font-size: 12px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></p>
+        
+        <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px;">
+            <strong id="track-status" style="color: #f39c12;">Buscando...</strong>
+        </div>
+        
+        <div style="background: #2a2a2a; height: 6px; border-radius: 4px; overflow: hidden; width: 100%; margin-bottom: 5px;">
+            <div id="track-barra" style="width: 5%; background: #2ed573; height: 100%; transition: width 0.8s ease;"></div>
+        </div>
+        <div id="track-msg" style="color: #aaa; font-size: 11px; text-align: center;">Conectando...</div>
+    </div>
+
+    <div id="carrinho-overlay" class="modal-oculto" style="z-index: 199;" onclick="fecharCarrinho()"></div>
+
+    <aside id="carrinho" class="carrinho-container">
+        <div class="carrinho-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">🛒 Seu Pedido</h3>
+            <button id="btn-fechar-carrinho" onclick="fecharCarrinho()" style="background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1;">&times;</button>
+        </div>
+        
+        <div id="itens-carrinho" class="carrinho-itens">
+            <p style="text-align: center; color: var(--text-secondary); margin-top: 20px;">
+                Seu carrinho está vazio.
+            </p>
+        </div>
+
+        <div class="carrinho-footer">
+            <div class="carrinho-total">
+                <span>Total:</span>
+                <span id="valor-total">R$ 0,00</span>
+            </div>
+            
+            <button id="btn-avancar-pagamento" class="btn-finalizar" onclick="finalizarPedido()">
+                Avançar para Pagamento
+            </button>
+        </div>
+    </aside> 
+
+    <div id="checkout-modal" class="modal-oculto">
+        <div class="modal-conteudo">
+            <span class="fechar-modal" onclick="fecharModal()">×</span>
+            <h2 style="margin-bottom: 16px;">Detalhes do Pedido</h2>
+            
+            <div class="form-grupo">
+                <label>Seu Nome:</label>
+                <input type="text" id="cliente-nome" placeholder="Ex: João Silva">
+            </div>
+            
+
+            <div class="form-grupo">
+                <label>Seu WhatsApp (DDD + Número):</label>
+                <input type="tel" id="cliente-whatsapp" placeholder="Ex: 68999999999">
+            </div>
+            
+            <div class="form-grupo">
+                <label>Como deseja receber?</label>
+                <select id="tipo-pedido" onchange="mudarTipoPedido()">
+                    <option value="local">Comer no Local</option>
+                    <option value="retirada">Retirar no Balcão</option>
+                    <option value="entrega">Para Entrega (Delivery)</option>
+                </select>
+            </div>
+            
+            <div id="grupo-endereco" style="display: none; flex-direction: column; margin-bottom: 16px;">
+                <div class="form-grupo">
+                    <label>Rua / Avenida:</label>
+                    <input type="text" id="cliente-rua" placeholder="Ex: Av. Coronel Mâncio Lima">
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <div class="form-grupo" style="flex: 1;">
+                        <label>Número:</label>
+                        <input type="text" id="cliente-numero" placeholder="Ex: 2191">
+                    </div>
+                    <div class="form-grupo" style="flex: 3;">
+                        <label>Bairro:</label>
+                        <input type="text" id="cliente-bairro" placeholder="Ex: Arthur Maia">
+                    </div>
+                </div>
+
+                <div class="form-grupo" style="margin-bottom: 0;">
+                    <label>Complemento (Opcional):</label>
+                    <input type="text" id="cliente-complemento" placeholder="Apto, Bloco, Ponto de Ref.">
+                </div>
+            </div>
+            
+            <div class="form-grupo" style="margin-top: 16px;">
+                <label>Observações do Pedido:</label>
+                <textarea id="cliente-obs" rows="3" placeholder="Ex: Tirar cebola, maionese à parte, tirar tomate..."></textarea>
+            </div>
+            
+            <div class="form-grupo" style="margin-top: 16px;">
+                <label>Forma de Pagamento:</label>
+                <select id="forma-pagamento" onchange="verificarOpcaoTroco()">
+                    <option value="pix-manual">Pix (Copia e Cola - Pagar Agora)</option>
+                    <option value="pagar-na-entrega">Cartão (Maquininha) ou Dinheiro no Local</option>
+                </select>
+            </div>
+
+            <div class="form-grupo" id="grupo-troco" style="display: none; margin-top: 10px; background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 8px; border: 1px dashed var(--text-orange);">
+                <label style="color: var(--text-orange); font-weight: bold; margin-bottom: 5px;">Vai pagar em dinheiro? Precisa de troco?</label>
+                <input type="number" id="cliente-troco" placeholder="Troco para quanto?" style="background: var(--surface-color);">
+            </div>
+
+            <div id="resumo-valores" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #444;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary);">
+                    <span>Subtotal:</span>
+                    <span id="modal-subtotal">R$ 0,00</span>
+                </div>
+                <div id="div-taxa-entrega" style="display: none; justify-content: space-between; font-size: 0.9rem; color: var(--text-secondary); margin-top: 5px;">
+                    <span>Taxa de Entrega:</span>
+                    <span id="modal-taxa">R$ 0,00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: bold; margin-top: 10px; color: var(--accent-color);">
+                    <span>Total Final:</span>
+                    <span id="modal-total-final">R$ 0,00</span>
+                </div>
+            </div>
+            
+            <button class="btn-confirmar" onclick="prepararPagamento()">
+                Ir para Pagamento 💳
+            </button>
+        </div>
+    </div>
+            <div id="modal-pix" class="modal-oculto" style="z-index: 9999;">
+                <div class="modal-conteudo" style="text-align: center; max-width: 350px;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">❇️</div>
+                    <h2 style="color: var(--text-green); margin-bottom: 10px;">Pague com Pix</h2>
+                    <p style="color: #aaa; font-size: 14px; margin-bottom: 20px;">Copie o código abaixo e pague no app do seu banco o valor exato de <strong id="pix-valor-tela" style="color: white; font-size: 16px;">R$ 0,00</strong>.</p>
+            
+                    <div id="codigo-pix-copia-cola" style="background: #111; padding: 15px; border-radius: 8px; border: 1px dashed var(--text-green); margin-bottom: 15px; word-break: break-all; font-family: monospace; font-size: 13px; color: #fff; text-align: left; max-height: 100px; overflow-y: auto;">
+                        GERANDO CÓDIGO...
+                    </div>
+
+                    <button onclick="copiarCodigoPix()" style="background: #333; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin-bottom: 15px; cursor: pointer;">📋 Copiar Código Pix</button>
+            
+                    <button onclick="confirmarEnvioPix()" class="btn-confirmar" style="background: var(--text-green); color: black;">✅ Já paguei! Enviar comprovante</button>
+            
+                    <button onclick="fecharModalPix()" style="background: transparent; color: #888; border: none; padding: 10px; margin-top: 10px; cursor: pointer; width: 100%; text-decoration: underline;">Voltar e mudar pagamento</button>
+                </div>
+            </div>
+
+    <div id="modal-resumo" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; font-family: sans-serif; padding: 15px; box-sizing: border-box;">
+        <div style="background: #1a1a1a; width: 100%; max-width: 360px; border-radius: 16px; padding: 0; color: white; border: 1px solid #333; position: relative; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.8);">
+
+            <div style="background: var(--accent-color); height: 6px; width: 100%;"></div>
+
+            <button onclick="fecharResumoPedido(event)" style="position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.1); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;">&times;</button>
+
+            <div style="padding: 25px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 30px; margin-bottom: 10px;">🧾</div>
+                    <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: 0.5px;">Cupom do Pedido</h2>
+                    <span style="color: #888; font-size: 12px;" id="resumo-id-pedido"></span>
+                </div>
+
+                <div style="line-height: 1.6; font-size: 13px; border-top: 1px dashed #444; border-bottom: 1px dashed #444; padding: 15px 0; margin-bottom: 15px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #aaa;">Cliente</span>
+                        <strong id="resumo-nome" style="text-align: right;">...</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #aaa;">Tipo</span>
+                        <strong id="resumo-tipo" style="text-align: right;">...</strong>
+                    </div>
+                    <div id="linha-endereco" style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="color: #aaa;">Endereço</span>
+                        <strong id="resumo-endereco" style="text-align: right; max-width: 60%;">...</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: #aaa;">Pagamento</span>
+                        <strong id="resumo-pagamento" style="text-align: right; color: #2ed573;">...</strong>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <strong style="display: block; margin-bottom: 10px; color: #fff; font-size: 14px;">Resumo dos Itens</strong>
+                    <div id="resumo-lista-itens" style="display: flex; flex-direction: column; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 5px;">
+                        </div>
+                </div>
+
+                <div style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                    <span style="display: block; font-size: 11px; color: var(--accent-color); text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">Observações</span>
+                    <span id="resumo-obs" style="font-size: 12px; color: #ccc; font-style: italic;">...</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #222; padding: 15px; border-radius: 12px; border: 1px solid #333;">
+                    <span style="color: #aaa; font-size: 14px; text-transform: uppercase;">Total Pago</span>
+                    <strong id="resumo-total" style="color: white; font-size: 22px;">R$ 0,00</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="produto-overlay" class="modal-oculto" style="z-index: 9998;" onclick="fecharModalProduto()"></div>
+
+    <div id="modal-produto" class="produto-bottom-sheet">
+        <button class="fechar-sheet" onclick="fecharModalProduto()">&times;</button>
+        
+        <div id="prod-emoji" class="prod-capa"></div>
+        
+        <div class="prod-sheet-conteudo">
+            <h2 id="prod-nome" style="color: white; margin-bottom: 5px; font-size: 24px; font-weight: 800;"></h2>
+            <p id="prod-desc" style="color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; line-height: 1.4;"></p>
+
+            <div class="secao-modal">
+                <h4 style="margin-bottom: 10px; color: #fff; border-bottom: 1px dashed #444; padding-bottom: 8px;">Ingredientes Base</h4>
+                <p id="prod-ingredientes" style="font-size: 13px; color: #aaa; line-height: 1.5;"></p>
+            </div>
+
+            <div class="secao-modal" style="margin-top: 10px;">
+                <div id="lista-adicionais" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            </div>
+
+            <div class="form-grupo" style="margin-top: 25px;">
+                <label style="color: var(--accent-color); font-weight: bold;">Observação para este lanche:</label>
+                <textarea id="prod-obs" rows="2" placeholder="Ex: Sem cebola, carne mal passada..."></textarea>
+            </div>
+
+            <button class="btn-confirmar" id="btn-add-carrinho-final" style="background-color: var(--accent-color); margin-top: 20px; font-size: 18px; padding: 15px; border-radius: 12px; box-shadow: 0 4px 15px rgba(255, 152, 0, 0.4);">
+                Adicionar - <span id="prod-preco-total"></span>
+            </button>
+        </div>
+    </div>
+
+    <script src="./js/app.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, doc, onSnapshot, collection, query, orderBy, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        //CHAVE DO FIREBASE ^^
+        const firebaseConfig = {
+          apiKey: "AIzaSyCUjBWv40J0Mp6KsHzWxOwz6hNyWDHOYT8",
+          authDomain: "pitstop-burguer.firebaseapp.com",
+          projectId: "pitstop-burguer",
+          storageBucket: "pitstop-burguer.firebasestorage.app",
+          messagingSenderId: "749099939746",
+          appId: "1:749099939746:web:1716fc96eb83bb1f7724fb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- RADAR DA TAXA DE ENTREGA ---
+        onSnapshot(doc(db, "configuracoes", "loja"), (docSnap) => {
+            if (docSnap.exists()) {
+                const dados = docSnap.data();
+                if (dados.taxaEntrega !== undefined && window.configuracoesGestor) {
+                    window.configuracoesGestor.taxaEntrega = dados.taxaEntrega;
+                    // Se o cliente estiver com o pagamento aberto, o preço atualiza na hora!
+                    if(typeof atualizarResumoModal === 'function') {
+                        atualizarResumoModal();
+                    }
+                }
+            }
+        });
+        
+        // O Carteiro Digital
+        window.enviarPedidoParaNuvem = async function(pacote) {
+            try {
+                // Prepara os dados invisíveis essenciais
+                pacote.status = "Pendente"; 
+                pacote.dataCriacao = Date.now(); // Marca temporal para o Gestor ordenar
+                
+                // Envio para o Firebase
+                const docRef = await addDoc(collection(db, "pedidos"), pacote);
+                return { sucesso: true, idPedido: docRef.id };
+            } catch (erro) {
+                console.error("Erro ao guardar o pedido:", erro);
+                return { sucesso: false };
+            }
+        }
+        
+        // --- TRAVA DE ABERTO/FECHADO (CLIENTE) ---
+        const configRef = doc(db, "configuracoes", "loja");
+        
+        onSnapshot(configRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const lojaAberta = docSnap.data().status === 'aberto';
+                const btnAvancar = document.getElementById('btn-avancar-pagamento'); 
+                const badgeStatus = document.getElementById('badge-status-loja'); // O nosso novo badge
+
+                if (!lojaAberta) {
+                    // Loja Fechada: Botão de pagamento bloqueado
+                    btnAvancar.style.background = "#555";
+                    btnAvancar.innerText = "⛔ LOJA FECHADA";
+                    btnAvancar.disabled = true;
+                    btnAvancar.style.cursor = "not-allowed";
+                    
+                    // Cabeçalho: Muda para Fechado (Vermelho sem piscar)
+                    if(badgeStatus) {
+                        badgeStatus.innerHTML = '<div style="width:8px;height:8px;background:#ff4757;border-radius:50%;"></div> Fechado';
+                    }
+                } else {
+                    // Loja Aberta: Botão de pagamento liberado
+                    btnAvancar.style.background = "#4CAF50";
+                    btnAvancar.innerText = "Avançar para Pagamento";
+                    btnAvancar.disabled = false;
+                    btnAvancar.style.cursor = "pointer";
+                    
+                    // Cabeçalho: Muda para Aberto (Verde pulsante)
+                    if(badgeStatus) {
+                        badgeStatus.innerHTML = '<div class="dot-pulse"></div> Aberto';
+                    }
+                }
+            }
+        });
+
+        let dadosDoPedidoAtual = null;
+
+        window.iniciarRastreador = function() {
+            const idPedido = localStorage.getItem('meu_ultimo_pedido');
+            if(idPedido) {
+                // Esconde botão Avançar, mostra Rastreador
+                document.getElementById('rastreador-integrado').style.display = 'block';
+                document.getElementById('track-id').innerText = "#" + idPedido.substring(0,6).toUpperCase();
+
+                onSnapshot(doc(db, "pedidos", idPedido), (documento) => {
+                    if (documento.exists()) {
+                        const dados = documento.data();
+                        atualizarRastreador(dados.status, dados.tipo, dados.itens, dados);
+                    }
+                });
+            }
+        }
+
+        function atualizarRastreador(status, tipo, itens, dadosCompletos) {
+            dadosDoPedidoAtual = dadosCompletos; 
+
+            const txtStatus = document.getElementById('track-status');
+            const txtMsg = document.getElementById('track-msg');
+            const barra = document.getElementById('track-barra');
+            const txtItens = document.getElementById('track-itens');
+
+            if (itens && itens.length > 0) {
+                const resumo = itens.map(item => `${item.quantidade}x ${item.nome}`).join(' + ');
+                txtItens.innerText = resumo;
+            }
+
+            txtStatus.innerText = status;
+
+            // A Lógica da Barra Atualizada com o status "Finalizado"
+            if (status === "Pendente") {
+                barra.style.width = "10%"; txtMsg.innerText = "Recebido na cozinha."; txtStatus.style.color = "#ff4757";
+            } else if (status === "Em Preparo") {
+                barra.style.width = "40%"; txtMsg.innerText = "O chef está na chapa! 🔥"; txtStatus.style.color = "#f39c12";
+            } else if (status === "Pronto") {
+                if (tipo !== "entrega") { 
+                    barra.style.width = "80%"; txtMsg.innerText = "Pronto! Venha retirar no balcão."; txtStatus.style.color = "#3498db";
+                } else {
+                    barra.style.width = "70%"; txtMsg.innerText = "Aguardando o entregador."; txtStatus.style.color = "#3498db";
+                }
+            } else if (status === "Saiu para Entrega") {
+                barra.style.width = "90%"; txtMsg.innerText = "O motoboy acelerou! 🛵💨"; txtStatus.style.color = "#2ed573";
+            } else if (status === "Finalizado") {
+                barra.style.width = "100%"; 
+                txtMsg.innerText = "Pedido concluído! Bom apetite! 🍔😋"; 
+                txtStatus.style.color = "#9b59b6";
+                txtStatus.innerText = "Entregue";
+            }
+        }
+
+        window.abrirResumoPedido = function() {
+            if (!dadosDoPedidoAtual) return; 
+            
+            // Puxa o ID do pedido que está salvo no navegador
+            const idPedidoLocal = localStorage.getItem('meu_ultimo_pedido') || "";
+            if (document.getElementById('resumo-id-pedido')) {
+                document.getElementById('resumo-id-pedido').innerText = idPedidoLocal ? "ID #" + idPedidoLocal.substring(0,6).toUpperCase() : "";
+            }
+
+            // Tratamento de Palavras para o Recibo
+            let tipoBonito = "Retirar no Balcão";
+            if (dadosDoPedidoAtual.tipo === "entrega") tipoBonito = "Entrega em Domicílio";
+            else if (dadosDoPedidoAtual.tipo === "local") tipoBonito = "Consumir no Local";
+
+            let pagBonito = dadosDoPedidoAtual.pagamento;
+            if (pagBonito === "pagar-na-entrega") pagBonito = "Pagar na Entrega";
+            else if (pagBonito === "pix-app") pagBonito = "Pix (App)";
+            else if (pagBonito === "cartao-app") pagBonito = "Cartão de Crédito";
+
+            // Endereço dinâmico
+            const linhaEnd = document.getElementById('linha-endereco');
+            if (dadosDoPedidoAtual.tipo === "entrega") {
+                linhaEnd.style.display = "flex";
+                document.getElementById('resumo-endereco').innerText = dadosDoPedidoAtual.endereco;
+            } else {
+                linhaEnd.style.display = "none";
+            }
+
+            document.getElementById('resumo-nome').innerText = dadosDoPedidoAtual.cliente;
+            document.getElementById('resumo-tipo').innerText = tipoBonito;
+            document.getElementById('resumo-pagamento').innerText = pagBonito;
+            document.getElementById('resumo-obs').innerText = dadosDoPedidoAtual.observacoes || "Nenhuma observação.";
+            document.getElementById('resumo-total').innerText = dadosDoPedidoAtual.totalGeral;
+
+            const listaHTML = document.getElementById('resumo-lista-itens');
+            listaHTML.innerHTML = '';
+            
+            // Injeta os itens no novo layout em linha
+            if(dadosDoPedidoAtual.itens) {
+                dadosDoPedidoAtual.itens.forEach(item => {
+                    let precoItem = item.preco;
+                    if(typeof precoItem === 'number') precoItem = precoItem.toFixed(2).replace('.', ',');
+                    
+                    listaHTML.innerHTML += `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px;">
+                            <span style="color: #ddd; max-width: 75%; line-height: 1.4;">
+                                <strong style="color: white;">${item.quantidade}x</strong> ${item.nome}
+                            </span>
+                            <span style="color: #aaa;">R$ ${precoItem}</span>
+                        </div>
+                    `;
+                });
+            }
+
+            // Exibir a taxa de entrega separadamente se for delivery (Valor fixo da taxa minima da entrega)
+            if (dadosDoPedidoAtual.tipo === "entrega" && dadosDoPedidoAtual.taxaEntrega && dadosDoPedidoAtual.taxaEntrega !== "R$ 5,00") {
+                listaHTML.innerHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px; margin-top: 5px; border-top: 1px dashed #333; padding-top: 8px;">
+                        <span style="color: #aaa;">Taxa de Entrega</span>
+                        <span style="color: #aaa;">${dadosDoPedidoAtual.taxaEntrega}</span>
+                    </div>
+                `;
+            }
+
+            document.getElementById('modal-resumo').style.display = 'flex';
+        }
+
+        window.fecharResumoPedido = function(event) {
+            if(event) event.stopPropagation();
+            document.getElementById('modal-resumo').style.display = 'none';
+        }
+        
+        window.encerrarRastreador = function(event) {
+            event.stopPropagation(); // Impede que o clique no X abra o recibo acidentalmente
+            localStorage.removeItem('meu_ultimo_pedido'); // Apaga o pedido da memória do navegador
+            document.getElementById('rastreador-integrado').style.display = 'none'; // Esconde a caixinha
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if(localStorage.getItem('meu_ultimo_pedido')) {
+                setTimeout(() => window.iniciarRastreador(), 1000);
+            }
+        });
+        // --- PUXAR O CARDÁPIO DO FIREBASE EM TEMPO REAL ---
+        const qProdutos = query(collection(db, "produtos"), orderBy("idProduto", "asc"));
+        
+        onSnapshot(qProdutos, (snapshot) => {
+            window.produtos = []; // Esvazia o cardápio antigo
+            
+            snapshot.forEach((docSnap) => {
+                window.produtos.push(docSnap.data()); // Puxa os dados novos
+            });
+            
+            // Quando a lista terminar de baixar do servidor, desenha a tela!
+            if(typeof window.renderizarCardapio === "function") {
+                window.renderizarCardapio();
+            }
+        });
+    </script>
+</body>
+</html>

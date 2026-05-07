@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pitstop Entregas | Motoboy</title>
+    <style>
+        :root { --bg: #121212; --surface: #1e1e1e; --accent: #2ed573; --text: #eee; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding-bottom: 30px; }
+        
+        header { background: var(--accent); padding: 20px; text-align: center; color: #121212; font-weight: 800; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        
+        /* --- NOVO VISUAL DA TELA DE LOGIN --- */
+        #tela-login { 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 80vh; /* Força a caixa a ir para o meio da tela */
+            padding: 20px; 
+            text-align: center; 
+        }
+        
+        .login-box {
+            background: var(--surface);
+            padding: 30px 20px;
+            border-radius: 16px;
+            border: 1px solid #333;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        .select-perfil { width: 100%; padding: 15px; background: #121212; border: 1px solid #444; color: white; border-radius: 12px; font-size: 16px; margin-top: 20px; outline: none; }
+        .input-senha { width: 100%; padding: 15px; background: #121212; border: 1px solid #444; color: white; border-radius: 12px; font-size: 16px; margin-top: 15px; box-sizing: border-box; outline: none; }
+        .input-senha:focus, .select-perfil:focus { border-color: var(--accent); }
+        
+        .btn-login { background: var(--accent); color: #121212; border: none; padding: 15px; border-radius: 12px; width: 100%; font-weight: bold; font-size: 16px; margin-top: 20px; cursor: pointer; transition: 0.2s; }
+        .btn-login:hover { background: #26b361; }
+        /* ------------------------------------ */
+
+        /* CARTEIRA DE GANHOS */
+        .carteira { background: #262626; margin: 15px; padding: 15px; border-radius: 12px; display: flex; justify-content: space-around; border: 1px solid #333; }
+        .metrica { text-align: center; }
+        .metrica span { font-size: 11px; color: #888; text-transform: uppercase; }
+        .metrica strong { display: block; font-size: 18px; color: var(--accent); }
+
+        /* CARDS DE ENTREGA E ANTI-VAZAMENTO */
+        .lista { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+        .card { background: var(--surface); border-radius: 16px; padding: 20px; border-left: 6px solid var(--accent); box-shadow: 0 10px 20px rgba(0,0,0,0.4); position: relative; overflow: hidden; }
+        
+        .status-badge { position: absolute; top: 15px; right: 15px; font-size: 10px; background: rgba(46, 213, 115, 0.1); color: var(--accent); padding: 4px 8px; border-radius: 20px; border: 1px solid var(--accent); white-space: nowrap; z-index: 2; }
+        
+        /* Novas classes para segurar o texto */
+        .card-nome { margin: 0 0 10px 0; font-size: 18px; padding-right: 85px; line-height: 1.3; word-wrap: break-word; position: relative; z-index: 1; }
+        .card-end { font-size: 14px; color: #aaa; margin-bottom: 15px; line-height: 1.4; word-wrap: break-word; padding-right: 10px; }
+        
+        .btn-rota { background: #3498db; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin-top: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; box-sizing: border-box; }
+        .btn-whats { background: transparent; border: 1px solid #25d366; color: #25d366; padding: 12px; border-radius: 8px; width: 100%; font-weight: bold; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; box-sizing: border-box; }
+        .btn-concluir { background: var(--accent); color: #121212; border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: bold; font-size: 16px; margin-top: 15px; cursor: pointer; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+    <audio id="som-alerta" preload="auto">
+        <source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3?filename=success-1-6297.mp3" type="audio/mpeg">
+    </audio>
+
+    <header>🛵 PITSTOP ENTREGAS</header>
+
+    <div id="tela-login" style="display: none;">
+        <div class="login-box">
+            <h2 style="margin-top: 0; color: white;">Bem-vindo!</h2>
+            <p style="color: #aaa; font-size: 14px;">Identifique-se para acessar suas entregas:</p>
+            
+            <select id="select-motoboy" class="select-perfil">
+                <option value="">Carregando lista...</option>
+            </select>
+
+            <input type="password" id="input-senha-moto" class="input-senha" placeholder="Senha (Seu Telefone)">
+
+            <button class="btn-login" onclick="tentarLogin()">Acessar Entregas</button>
+        </div>
+    </div>
+
+    <div id="tela-entregas" style="display: none;">
+        <div style="display: flex; justify-content: space-between; padding: 15px 15px 0 15px; align-items: center;">
+            <span style="color: #aaa; font-size: 14px;">Logado como: <strong id="nome-logado" style="color: var(--accent);"></strong></span>
+            <button onclick="sairDoApp()" style="background: #333; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Sair</button>
+        </div>
+        <div class="carteira" style="justify-content: center;">
+            <div class="metrica">
+                <span>Entregas Concluídas Hoje</span>
+                <strong id="total-entregas" style="font-size: 24px;">0</strong>
+            </div>
+        </div>
+
+        <div id="lista-cards" class="lista"></div>
+    </div>
+    
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, query, onSnapshot, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCUjBWv40J0Mp6KsHzWxOwz6hNyWDHOYT8",
+          authDomain: "pitstop-burguer.firebaseapp.com",
+          projectId: "pitstop-burguer",
+          storageBucket: "pitstop-burguer.firebasestorage.app",
+          messagingSenderId: "749099939746",
+          appId: "1:749099939746:web:1716fc96eb83bb1f7724fb"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        let meuNome = localStorage.getItem('motoboy_nome');
+        const taxaPorEntrega = 5.00; 
+        
+        let listaMotoboys = [];
+
+        // 1. CARREGAR LISTA DE MOTOBOYS
+        onSnapshot(collection(db, "motoboys"), (snapshot) => {
+            const select = document.getElementById('select-motoboy');
+            select.innerHTML = '<option value="">Selecione seu nome...</option>';
+            listaMotoboys = [];
+
+            snapshot.forEach(doc => {
+                const m = doc.data();
+                listaMotoboys.push(m);
+                select.innerHTML += `<option value="${m.nome}">${m.nome}</option>`;
+            });
+            verificarLogin();
+        });
+
+        function verificarLogin() {
+            if (meuNome) {
+                document.getElementById('tela-login').style.display = 'none';
+                document.getElementById('tela-entregas').style.display = 'block';
+                document.getElementById('nome-logado').innerText = meuNome;
+                iniciarRastreadorTrabalho();
+            } else {
+                document.getElementById('tela-login').style.display = 'flex';
+                document.getElementById('tela-entregas').style.display = 'none';
+            }
+        }
+
+        window.tentarLogin = function() {
+            const nomeSelecionado = document.getElementById('select-motoboy').value;
+            const senhaDigitada = document.getElementById('input-senha-moto').value.trim();
+
+            if (!nomeSelecionado) return alert("Por favor, selecione o seu nome na lista!");
+            if (!senhaDigitada) return alert("Por favor, digite a sua senha!");
+
+            const motoboyCadastrado = listaMotoboys.find(m => m.nome === nomeSelecionado);
+            const telefoneLimpoBanco = motoboyCadastrado.telefone.replace(/\D/g, '');
+            const senhaLimpaDigitada = senhaDigitada.replace(/\D/g, '');
+
+            if (telefoneLimpoBanco === senhaLimpaDigitada) {
+                localStorage.setItem('motoboy_nome', nomeSelecionado);
+                meuNome = nomeSelecionado;
+                verificarLogin();
+            } else {
+                alert("Senha incorreta! Digite os números do seu telefone exatamente como foi cadastrado.");
+            }
+        }
+
+        // --- A PRANCHETA DO FISCAL (MEMÓRIA DO RADAR) ---
+        let entregasConhecidas = [];
+        let primeiraLeitura = true;
+
+        // 2. BUSCAR ENTREGAS DO MOTOBOY LOGADO
+        function iniciarRastreadorTrabalho() {
+            const q = query(collection(db, "pedidos"), where("entregador", "==", meuNome));
+
+            onSnapshot(q, (snapshot) => {
+                const lista = document.getElementById('lista-cards');
+                lista.innerHTML = '';
+                let contagemGeral = 0;
+                let entregasAtivas = 0;
+                
+                let tocouAlarme = false;
+                let IDsAtuais = [];
+
+                snapshot.forEach((documento) => {
+                    const pedido = documento.data();
+                    const id = documento.id;
+                    
+                    if (pedido.status === "Finalizado") {
+                        contagemGeral++;
+                    }
+
+                    if (pedido.status === "Saiu para Entrega") {
+                        entregasAtivas++;
+                        IDsAtuais.push(id); // O fiscal anota o ID atual
+
+                        // --- A VERIFICAÇÃO DO FISCAL ---
+                        // Se não for a primeira vez que abre o app E o ID for novidade:
+                        if (!primeiraLeitura && !entregasConhecidas.includes(id)) {
+                            tocouAlarme = true;
+                        }
+
+                        const whatsLimpo = pedido.whatsapp ? pedido.whatsapp.replace(/\D/g, '') : '';
+                        
+                        // 👇 LINK DEFINITIVO DO MAPS (Abre o GPS a traçar a rota) 👇
+                        // DICA: Se atende só em Cruzeiro do Sul, deixei a cidade forçada aqui para o Google não errar a rua!
+                        const enderecoCompleto = pedido.endereco + ", Cruzeiro do Sul - AC";
+                        const linkMaps = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(enderecoCompleto)}`;
+                        
+                        const linkWhats = `https://api.whatsapp.com/send?phone=55${whatsLimpo}&text=Olá ${pedido.cliente}, sou o entregador do Pitstop Burguer! Estou a caminho com o seu pedido.`;
+
+                        lista.innerHTML += `
+                            <div class="card">
+                                <span class="status-badge">A CAMINHO</span>
+                                
+                                <h3 class="card-nome">👤 ${pedido.cliente}</h3>
+                                <p class="card-end">📍 ${pedido.endereco}</p>
+                                
+                                <div class="price-box">
+                                    <span class="price-label">${pedido.pagamento === 'pagar-na-entrega' ? '💵 COBRAR NO LOCAL' : '✅ JÁ PAGO NO APP'}</span>
+                                    <span class="price-value">${pedido.totalGeral}</span>
+                                </div>
+
+                                <a href="${linkWhats}" target="_blank" class="btn-whats">💬 Falar com Cliente</a>
+                                <button class="btn-concluir" onclick="finalizarEntrega('${id}')">✔ Confirmar Entrega</button>
+                            </div>
+                        `;
+                    }
+                });
+
+                // --- O GRITO DO FISCAL (TOCAR ALARME E VIBRAR) ---
+                if (tocouAlarme) {
+                    const audio = document.getElementById('som-alerta');
+                    if(audio) audio.play().catch(e => console.log("Áudio bloqueado:", e));
+                    
+                    if (navigator.vibrate) navigator.vibrate([500, 200, 500]); // Vibra o telemóvel
+                }
+
+                // O fiscal guarda a nova lista de IDs na prancheta para a próxima vez
+                entregasConhecidas = [...IDsAtuais];
+                primeiraLeitura = false;
+
+                document.getElementById('total-entregas').innerText = contagemGeral;
+                //document.getElementById('ganhos-hoje').innerText = (contagemGeral * taxaPorEntrega).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});//
+
+                if (entregasAtivas === 0) {
+                    lista.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">Tudo limpo! Aguardando novos pedidos... 🥤</div>';
+                }
+            });
+        }
+
+        window.finalizarEntrega = async (id) => {
+            if (confirm("Confirmar que o pedido foi entregue e pago?")) {
+                await updateDoc(doc(db, "pedidos", id), { status: "Finalizado" });
+            }
+        }
+
+        window.sairDoApp = function() {
+            if(confirm("Deseja sair da sua conta?")) {
+                localStorage.removeItem('motoboy_nome');
+                meuNome = null;
+                location.reload(); // Recarrega a página para voltar ao Login
+            }
+        }
+        
+    </script>
+</body>
+</html>

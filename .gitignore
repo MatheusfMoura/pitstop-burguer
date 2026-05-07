@@ -1,0 +1,14 @@
+# Ignorar dependências do Node
+node_modules/
+backend/node_modules/
+
+# 🚨 Ignorar chaves de segurança e variáveis de ambiente 🚨
+firebase-key.json
+backend/firebase-key.json
+.env
+backend/.env
+
+# Ignorar arquivos de log e sistema
+npm-debug.log
+.DS_Store
+Thumbs.db

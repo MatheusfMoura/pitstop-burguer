@@ -1,0 +1,182 @@
+/* ==========================================
+    1. VARIÁVEIS E BASE (Soft UI Dark Mode)
+========================================== */
+:root {
+    --bg-main: #0d1117; --bg-sidebar: #161b22; --bg-card: #21262d; --bg-hover: #30363d;
+    --text-main: #c9d1d9; --text-muted: #8b949e; --border-color: #30363d;
+    --soft-red: rgba(248, 81, 73, 0.15); --text-red: #ff7b72;
+    --soft-orange: rgba(210, 153, 34, 0.15); --text-orange: #e3b341;
+    --soft-blue: rgba(56, 139, 253, 0.15); --text-blue: #79c0ff;
+    --soft-green: rgba(46, 160, 67, 0.15); --text-green: #56d364;
+    --soft-purple: rgba(163, 113, 247, 0.15); --text-purple: #d2a8ff;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+body { background-color: var(--bg-main); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #666; }
+
+/* ==========================================
+    2. SIDEBAR
+========================================== */
+.sidebar { width: 80px; background-color: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; align-items: center; padding: 20px 0; z-index: 10; }
+.logo { font-size: 32px; margin-bottom: 40px; }
+.menu-item { width: 50px; height: 50px; border-radius: 12px; display: flex; justify-content: center; align-items: center; font-size: 22px; color: var(--text-muted); cursor: pointer; margin-bottom: 15px; transition: 0.2s; }
+.menu-item:hover { background-color: var(--bg-hover); color: white; }
+.menu-item.active { background-color: var(--soft-orange); color: var(--text-orange); border: 1px solid rgba(210, 153, 34, 0.4); }
+
+.main-content { flex: 1; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+
+/* SISTEMA DE TELAS (VIEWS) */
+.tela { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+.tela.ativa { display: flex; }
+
+/* ==========================================
+    3. TELA DE PEDIDOS (KDS)
+========================================== */
+header { padding: 20px 30px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--bg-main); }
+.header-title h1 { font-size: 20px; color: white; margin-bottom: 4px; }
+.metrics-container { display: flex; gap: 20px; }
+.metric-box { background: var(--bg-sidebar); border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 8px; text-align: center; }
+.metric-box span { display: block; font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; }
+.metric-box strong { font-size: 18px; color: white; }
+
+.status-loja { padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; display: inline-block; margin-bottom: 5px; }
+.loja-aberta { background: var(--soft-green); color: var(--text-green); border: 1px solid rgba(46, 160, 67, 0.4); }
+.loja-fechada { background: var(--soft-red); color: var(--text-red); border: 1px solid rgba(248, 81, 73, 0.4); }
+
+.board { flex: 1; display: flex; gap: 20px; padding: 20px 30px 30px 30px; overflow-x: auto; align-items: flex-start; }
+.coluna { width: 275px; min-width: 275px; display: flex; flex-direction: column; max-height: 100%; }
+.coluna:last-child { margin-right: 30px; }
+.col-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid var(--border-color); margin-bottom: 15px; }
+.col-title { font-size: 14px; font-weight: 600; text-transform: uppercase; }
+.col-count { background: var(--bg-sidebar); border: 1px solid var(--border-color); padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+
+#col-pendente .col-title { color: var(--text-red); }
+#col-preparo .col-title { color: var(--text-orange); }
+#col-pronto .col-title { color: var(--text-blue); }
+#col-entrega .col-title { color: var(--text-green); }
+#col-finalizado .col-title { color: var(--text-purple); }
+
+.lista-cards { overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
+.card-mini { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; cursor: pointer; transition: 0.2s; position: relative; }
+.card-mini:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.3); border-color: #555; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.card-id { font-size: 11px; color: var(--text-muted); font-family: monospace; }
+.card-client { font-size: 16px; font-weight: 600; color: white; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-info { font-size: 13px; color: var(--text-muted); display: flex; justify-content: space-between; }
+.tag { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+.tag.local { background: var(--soft-blue); color: var(--text-blue); }
+.tag.entrega { background: var(--soft-green); color: var(--text-green); }
+.tag.retirada { background: var(--soft-orange); color: var(--text-orange); }
+
+/* GAVETA KDS */
+.drawer-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; display: none; opacity: 0; transition: opacity 0.3s; }
+.drawer { position: fixed; top: 0; right: -450px; width: 450px; height: 100%; background-color: var(--bg-sidebar); border-left: 1px solid var(--border-color); z-index: 101; display: flex; flex-direction: column; transition: right 0.3s; }
+.drawer-header { padding: 20px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+.btn-close { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
+.drawer-content { flex: 1; overflow-y: auto; padding: 25px; }
+.info-section { margin-bottom: 25px; }
+.info-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px; display: block; }
+.item-row { background: var(--bg-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+.drawer-footer { padding: 20px 25px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; }
+.btn-action { flex: 1; padding: 14px; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; text-align: center; }
+
+/* ==========================================
+    4. NOVA TELA DE CARDÁPIO COMPLETA
+========================================== */
+.cardapio-container { padding: 30px; display: flex; gap: 30px; height: 100%; overflow: hidden; }
+.painel-form { width: 400px; background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+.painel-header { padding: 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-card); }
+.painel-body { padding: 20px; overflow-y: auto; flex: 1; }
+
+.input-group { margin-bottom: 15px; }
+.input-group label { display: block; font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
+.input-padrao { width: 100%; padding: 10px; background: var(--bg-main); border: 1px solid var(--border-color); color: white; border-radius: 6px; outline: none; }
+
+/* Construtor de Listas (Ingredientes e Adicionais) */
+.builder-box { background: var(--bg-main); border: 1px dashed var(--border-color); padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+.linha-add { display: flex; gap: 8px; margin-bottom: 10px; }
+.tag-item { display: inline-flex; align-items: center; gap: 5px; background: var(--bg-card); border: 1px solid var(--border-color); padding: 4px 8px; border-radius: 4px; font-size: 12px; margin: 0 5px 5px 0; }
+.btn-remover-tag { background: none; border: none; color: var(--text-red); cursor: pointer; font-weight: bold; }
+
+/* Grid de Lanches Ativos */
+.painel-lista { flex: 1; background: var(--bg-sidebar); border: 1px solid var(--border-color); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;}
+.grid-produtos { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; padding: 20px; overflow-y: auto; align-items: start;}
+
+.card-produto-real { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; min-height: 360px; justify-content: space-between; }
+.img-produto { width: 100%; height: 160px; object-fit: cover; background: #222; }
+.conteudo-produto { padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
+.titulo-produto { font-size: 16px; color: white; font-weight: bold; margin-bottom: 5px; }
+.desc-produto { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4; flex: 1; }
+
+.btn-salvar-lanche { width: 100%; padding: 15px; background: var(--soft-green); color: var(--text-green); font-weight: bold; border: 1px solid rgba(46,160,67,0.4); border-radius: 6px; cursor: pointer; transition: 0.2s; }
+.btn-salvar-lanche:hover { background: #2ea043; color: white; }
+
+/* ==========================================
+   UPGRADE VISUAL DO KDS (Colunas e Cards)
+========================================== */
+.board {
+    background-color: #05070a; /* Fundo super escuro para dar contraste */
+}
+.coluna {
+    background-color: var(--bg-sidebar);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3); /* Sombra profissional */
+}
+.col-header {
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 12px;
+}
+.card-mini {
+    background-color: var(--bg-main);
+    border-left: 4px solid var(--border-color); /* Borda grossa na esquerda */
+    display: flex;
+    flex-direction: column;
+}
+
+/* Cores dinâmicas na borda de cada cartão dependendo da coluna! */
+#col-pendente .card-mini { border-left-color: var(--text-red); }
+#col-preparo .card-mini { border-left-color: var(--text-orange); }
+#col-pronto .card-mini { border-left-color: var(--text-blue); }
+#col-entrega .card-mini { border-left-color: var(--text-green); }
+#col-finalizado .card-mini { border-left-color: var(--text-purple); }
+
+/* ==========================================
+ MÁGICA DA IMPRESSORA TÉRMICA
+========================================== */
+@media print {
+    /* Esconde o site todo */
+    body * {
+        visibility: hidden;
+    }
+    
+    /* Mostra apenas a área de impressão e tudo dentro dela */
+    #area-impressao, #area-impressao * {
+        visibility: visible;
+    }
+    
+    /* Posiciona a comanda no canto superior esquerdo para a bobina */
+    #area-impressao {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        max-width: 80mm; /* Largura padrão das impressoras maiores (ajuste se a sua for 58mm) */
+        margin: 0;
+        padding: 0;
+        background: white !important;
+        color: black !important;
+        font-family: monospace; /* Fonte clássica de recibo */
+    }
+
+    /* Tira as margens padrões da folha A4 */
+    @page {
+        margin: 0; 
+    }
+}
