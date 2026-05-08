@@ -1018,3 +1018,96 @@ window.imprimirComanda = function(id) {
     
     area.style.display = 'none'; // Esconde de novo
 }
+
+// ==========================================
+// MÓDULO DE ESTOQUE DE PÃES (AO VIVO)
+// ==========================================
+
+// 1. Fica a escutar o Firebase para atualizar o visor na hora
+onSnapshot(doc(db, "configuracoes", "loja"), (documento) => {
+    if (documento.exists()) {
+        const dadosLoja = documento.data();
+        const visor = document.getElementById('visor-paes');
+        
+        if (visor && dadosLoja.estoquePaes !== undefined) {
+            visor.innerText = dadosLoja.estoquePaes + " unidades";
+            
+            // Alerta de estoque baixo: Fica vermelho se tiver 10 pães ou menos
+            if(dadosLoja.estoquePaes <= 10) {
+                visor.style.color = "var(--text-red)";
+            } else {
+                visor.style.color = "var(--text-main)";
+            }
+        }
+    }
+});
+
+// 2. Função do Botão para o Gestor digitar os pães do dia
+window.definirEstoque = async function() {
+    const qtd = prompt("🍔 Quantos pães físicos você tem agora para iniciar o turno?");
+    
+    // Verifica se o gestor digitou um número válido
+    if (qtd !== null && qtd.trim() !== "" && !isNaN(qtd)) {
+        try {
+            await updateDoc(doc(db, "configuracoes", "loja"), {
+                estoquePaes: parseInt(qtd)
+            });
+            alert(`✅ Estoque iniciado com ${qtd} pães! O sistema vai abater automaticamente a cada hambúrguer vendido.`);
+        } catch (error) {
+            console.error("Erro ao atualizar estoque:", error);
+            alert("Erro ao atualizar o estoque. Verifique sua internet.");
+        }
+    }
+}
+
+// COLE NO FINAL DO GESTOR.JS
+let estoqueMaximo = localStorage.getItem('estoque_max_dia') || 100;
+
+onSnapshot(doc(db, "configuracoes", "loja"), (docSnap) => {
+    if (docSnap.exists()) {
+        const dados = docSnap.data();
+        const visor = document.getElementById('visor-paes');
+        const barra = document.getElementById('barra-progresso-paes');
+        const txtPercent = document.getElementById('status-percent');
+
+        if (visor && dados.estoquePaes !== undefined) {
+            const atual = dados.estoquePaes;
+            visor.innerText = atual;
+
+            // Cálculo da barra
+            let perc = Math.round((atual / estoqueMaximo) * 100);
+            if (perc > 100) perc = 100;
+            if (perc < 0) perc = 0;
+
+            barra.style.width = perc + "%";
+            txtPercent.innerText = perc + "%";
+
+            // Cores dinâmicas
+            if (perc > 50) {
+                barra.style.background = "var(--text-green)";
+                txtPercent.style.color = "var(--text-green)";
+                txtPercent.style.background = "var(--soft-green)";
+            } else if (perc > 20) {
+                barra.style.background = "var(--text-orange)";
+                txtPercent.style.color = "var(--text-orange)";
+                txtPercent.style.background = "var(--soft-orange)";
+            } else {
+                barra.style.background = "var(--text-red)";
+                txtPercent.style.color = "var(--text-red)";
+                txtPercent.style.background = "var(--soft-red)";
+            }
+        }
+    }
+});
+
+window.definirEstoque = async function() {
+    const qtd = prompt("🍔 Quantos pães você tem agora para iniciar o turno?");
+    if (qtd && !isNaN(qtd)) {
+        estoqueMaximo = parseInt(qtd);
+        localStorage.setItem('estoque_max_dia', qtd);
+        try {
+            await updateDoc(doc(db, "configuracoes", "loja"), { estoquePaes: estoqueMaximo });
+            alert("Estoque iniciado!");
+        } catch (e) { alert("Erro ao salvar estoque."); }
+    }
+};

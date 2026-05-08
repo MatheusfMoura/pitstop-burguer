@@ -52,6 +52,7 @@
         <div class="menu-item" onclick="sairGestor()" title="Sair do Sistema" style="margin-top: auto; color: var(--text-red);">
             <span class="material-symbols-outlined" style="font-size: 26px;">logout</span>
         </div>
+        
     </div>
 
     <div class="main-content">
@@ -63,13 +64,39 @@
                     <p id="data-hoje" style="margin-top: 5px; font-size: 12px; color: var(--text-muted);"></p>
                 </div>
                 <div class="metrics-container">
-                    <div class="metric-box">
-                        <span>Pedidos Hoje</span>
+                    <div class="metric-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                        <span style="margin-bottom: 5px;">Pedidos Hoje</span>
                         <strong id="metric-pedidos">0</strong>
                     </div>
-                    <div class="metric-box">
-                        <span>Faturamento</span>
+                    
+                    <div class="metric-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                        <span style="margin-bottom: 5px;">Faturamento</span>
                         <strong id="metric-receita" style="color: var(--text-green);">R$ 0,00</strong>
+                    </div>
+                    
+                    <div class="metric-box" style="border-left: 3px solid var(--text-orange); padding-left: 15px; display: flex; flex-direction: column; justify-content: center; min-width: 180px;">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted);">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-orange);">bakery_dining</span> 
+                                Estoque Pães
+                            </span>
+                            <span id="status-percent" style="background: rgba(227, 179, 65, 0.2); color: var(--text-orange); padding: 2px 6px; border-radius: 8px; font-size: 10px; font-weight: bold;">--%</span>
+                        </div>
+                        
+                        <div style="display: flex; align-items: baseline; gap: 5px; margin-bottom: 8px;">
+                            <strong id="visor-paes" style="font-size: 22px; color: var(--text-main); margin: 0;">--</strong>
+                            <span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">UNID.</span>
+                        </div>
+
+                        <div style="background: rgba(255,255,255,0.05); height: 4px; border-radius: 5px; width: 100%; overflow: hidden; margin-bottom: 8px;">
+                            <div id="barra-progresso-paes" style="width: 0%; height: 100%; background: var(--text-orange); transition: width 0.8s;"></div>
+                        </div>
+
+                        <button onclick="definirEstoque()" style="background: rgba(227, 179, 65, 0.1); color: var(--text-orange); border: 1px solid rgba(227, 179, 65, 0.3); padding: 5px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; width: 100%; transition: 0.2s;">
+                            REPOR ESTOQUE
+                        </button>
+
                     </div>
                 </div>
             </header>

@@ -32,11 +32,21 @@ app.post('/api/pedidos', async (req, res) => {
         let paesConsumidos = 0;
         if(pacoteDeDados.itens) {
             pacoteDeDados.itens.forEach(item => {
-                // ID 1 (Clássico) e ID 2 (Duplo Bacon) são os lanches que usam pão
-                if (item.idProdutoOriginal === 1 || item.idProdutoOriginal === 2) {
+                // Inteligência: Só desconta se a categoria for "Hamburguers"
+                // Ignora automaticamente batatas, porções e bebidas!
+                if (item.categoria === "Hamburguers") {
                     paesConsumidos += item.quantidade;
                 }
             });
+        }
+
+        // Se o pedido consumiu algum pão, manda o Firebase subtrair de forma segura
+        if (paesConsumidos > 0) {
+            const configRef = db.collection('configuracoes').doc('loja');
+            await configRef.update({
+                estoquePaes: admin.firestore.FieldValue.increment(-paesConsumidos)
+            });
+            console.log(`🍞 Descontando ${paesConsumidos} pães do estoque...`);
         }
 
         // Se o pedido consumiu algum pão, manda o Firebase subtrair de forma segura

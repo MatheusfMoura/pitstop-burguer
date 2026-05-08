@@ -465,8 +465,8 @@ window.prepararPagamento = async function() {
 
     if (formaPagamento === 'pix-manual') {
         // --- 🔴 ATENÇÃO: COLOQUE AQUI OS SEUS DADOS BANCÁRIOS REAIS 🔴 ---
-        const CHAVE_PIX = "00000000000"; // Sua chave Pix (CPF, CNPJ, Celular ou Email)
-        const NOME_TITULAR = "Uelmisson Figueiredo"; // Seu nome como aparece no banco (Sem acentos)
+        const CHAVE_PIX = "65.687.354/0001-00"; // Sua chave Pix (CPF, CNPJ, Celular ou Email)
+        const NOME_TITULAR = "CAREN SAIURI SILVA FIGUEIREDO"; // Seu nome como aparece no banco (Sem acentos)
         const CIDADE = "Cruzeiro do Sul"; // Cidade da sua conta bancária (Sem acentos)
         // ----------------------------------------------------------------
 
@@ -526,7 +526,7 @@ window.finalizarEnvioNuvem = async function(abrirWhatsApp = false) {
 
             if(abrirWhatsApp) {
                 // --- 🔴 ATENÇÃO: COLOQUE O NÚMERO DO WHATSAPP DA SUA LANCHONETE AQUI 🔴 ---
-                const NUMERO_LANCHONETE = "5568999999999"; // Coloque 55 + DDD + Numero
+                const NUMERO_LANCHONETE = "556899106457"; // Coloque 55 + DDD + Numero
                 const textoZap = `✅ *NOVO PIX ENVIADO*\n\nPedido: #${resposta.idPedido.substring(0,6).toUpperCase()}\nCliente: ${window.pacotePedidoAtual.cliente}\nValor: ${window.pacotePedidoAtual.totalGeral}\n\n*Abaixo enviarei o comprovante:*`;
                 const linkZap = `https://api.whatsapp.com/send?phone=${NUMERO_LANCHONETE}&text=${encodeURIComponent(textoZap)}`;
                 window.open(linkZap, '_blank');
