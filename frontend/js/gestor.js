@@ -519,6 +519,12 @@ window.despacharComMotoboy = async function(id) {
     }
 }
 
+// ==========================================
+// 🖨️ MEMÓRIA DA IMPRESSORA AUTOMÁTICA
+let pedidosJaImpressos = new Set();
+let primeiraCargaDoPainel = true;
+// ==========================================
+
 const qPedidos = query(collection(db, "pedidos"), orderBy("dataCriacao", "asc"));
 onSnapshot(qPedidos, (snapshot) => {
     document.getElementById('lista-pendente').innerHTML = ''; document.getElementById('lista-preparo').innerHTML = '';
@@ -534,6 +540,15 @@ onSnapshot(qPedidos, (snapshot) => {
         
         // 🚨 FILTRO DE TURNO: Se o pedido foi feito antes do caixa abrir, ignora e pula pro próximo!
         if (pedido.dataCriacao < timestampAberturaCaixa) return; 
+
+        // ==========================================
+        // 🖨️ GATILHO: SE CHEGOU PEDIDO NOVO, IMPRIME!
+        // ==========================================
+        if (!primeiraCargaDoPainel && pedido.status === "Pendente" && !pedidosJaImpressos.has(id)) {
+            setTimeout(() => { imprimirComanda(id); }, 1500); // Espera 1.5s para renderizar e imprime
+        }
+        pedidosJaImpressos.add(id); // Guarda na memória para não imprimir duplicado
+        // ==========================================
 
         dadosCompletosMemoria[id] = pedido;
         
@@ -582,6 +597,8 @@ onSnapshot(qPedidos, (snapshot) => {
     document.getElementById('count-pendente').innerText = contagens.pendente; document.getElementById('count-preparo').innerText = contagens.preparo;
     document.getElementById('count-pronto').innerText = contagens.pronto; document.getElementById('count-entrega').innerText = contagens.entrega;
     document.getElementById('count-finalizado').innerText = contagens.finalizado;
+    
+    primeiraCargaDoPainel = false; // <- AVISA O SISTEMA QUE JÁ CARREGOU OS PEDIDOS ANTIGOS
 });
 
 // GESTÃO DE MOTOBOYS
@@ -1074,8 +1091,12 @@ onSnapshot(doc(db, "configuracoes", "loja"), (docSnap) => {
             const atual = dados.estoquePaes;
             visor.innerText = atual;
 
-            // Cálculo da barra
+            // Cálculo da barra com Trava Anti-Bug (Novo)
             let perc = Math.round((atual / estoqueMaximo) * 100);
+            
+            // Se a matemática der erro (NaN), força para 0
+            if (isNaN(perc)) perc = 0; 
+            
             if (perc > 100) perc = 100;
             if (perc < 0) perc = 0;
 
