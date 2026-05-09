@@ -32,9 +32,9 @@ app.post('/api/pedidos', async (req, res) => {
         let paesConsumidos = 0;
         if(pacoteDeDados.itens) {
             pacoteDeDados.itens.forEach(item => {
-                // Inteligência: Só desconta se a categoria for "Hamburguers"
+                // Inteligência: Desconta se a categoria for "Hamburguers" OU "Sanduíches"
                 // Ignora automaticamente batatas, porções e bebidas!
-                if (item.categoria === "Hamburguers") {
+                if (item.categoria === "Hamburguers" || item.categoria === "Sanduíches") {
                     paesConsumidos += item.quantidade;
                 }
             });
