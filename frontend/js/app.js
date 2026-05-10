@@ -548,22 +548,36 @@ window.finalizarEnvioNuvem = async function(abrirWhatsApp = false) {
     }
 }
 
-// O MATEMÁTICO: ALGORITMO OFICIAL DO BANCO CENTRAL DO BRASIL (BR CODE)
+// O MATEMÁTICO: ALGORITMO OFICIAL DO BANCO CENTRAL DO BRASIL (BR CODE BLINDADO)
 function gerarPayloadPix(chave, nome, cidade, valor) {
-    chave = chave.trim(); 
-    nome = nome.trim().substring(0,25).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); 
-    cidade = cidade.trim().substring(0,15).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    
+    // 1. Limpeza inteligente
+    let chaveLimpa = chave.trim().replace(/[^a-zA-Z0-9+@.-]/g, '');
+    let nomeLimpo = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, "").substring(0, 25).trim();
+    let cidadeLimpa = cidade.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9 ]/g, "").substring(0, 15).trim();
+
+    // 2. Trava do Valor
+    let valorString = valor.toFixed(2);
+    let valorLen = valorString.length.toString().padStart(2, '0');
+
+    // 3. Bloco da Chave
+    let blocoChave = "0014br.gov.bcb.pix01" + chaveLimpa.length.toString().padStart(2, '0') + chaveLimpa;
+    let blocoChaveLen = blocoChave.length.toString().padStart(2, '0');
+
+    // 4. O SEGREDO: TXID real para contas de Empresa aceitarem
+    let txid = "PITSTOP";
+    let txidBloco = "05" + txid.length.toString().padStart(2, '0') + txid;
+    let txidLen = txidBloco.length.toString().padStart(2, '0');
+
     let payload = [
         "000201",
-        "26" + ("0014br.gov.bcb.pix01" + chave.length.toString().padStart(2, '0') + chave).length.toString().padStart(2, '0') + "0014br.gov.bcb.pix01" + chave.length.toString().padStart(2, '0') + chave,
+        "26" + blocoChaveLen + blocoChave,
         "52040000",
         "5303986",
-        "54" + valor.toFixed(2).length.toString().padStart(2, '0') + valor.toFixed(2),
+        "54" + valorLen + valorString, // <--- AQUI É ONDE O VALOR É TRAVADO AUTOMATICAMENTE
         "5802BR",
-        "59" + nome.length.toString().padStart(2, '0') + nome,
-        "60" + cidade.length.toString().padStart(2, '0') + cidade,
-        "62070503***",
+        "59" + nomeLimpo.length.toString().padStart(2, '0') + nomeLimpo,
+        "60" + cidadeLimpa.length.toString().padStart(2, '0') + cidadeLimpa,
+        "62" + txidLen + txidBloco,
         "6304"
     ].join('');
 
