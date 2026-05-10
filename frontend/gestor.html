@@ -214,11 +214,12 @@
                 </div>
                 
                 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                    <div style="background: var(--bg-main); padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 13px; color: var(--text-muted);">🛵 Taxa Padrão:</span>
-                        <span style="color: white; font-weight: bold;">R$</span>
-                        <input type="number" id="in-taxa-entrega" style="width: 60px; padding: 6px; background: var(--bg-card); border: 1px solid #444; color: white; border-radius: 4px; outline: none; text-align: center;" step="1.00">
-                        <button onclick="salvarTaxaGestor()" style="background: var(--text-green); color: black; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px;">Atualizar</button>
+                    <div style="background: var(--bg-main); padding: 10px 20px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px;">
+                        <span style="font-size: 13px; color: var(--text-muted); font-weight: bold;">🎁 ENTREGA GRÁTIS GERAL:</span>
+                        <label class="ios-switch">
+                            <input type="checkbox" id="switch-entrega-gratis" onchange="toggleEntregaGratis()">
+                            <span class="ios-slider"></span>
+                        </label>
                     </div>
 
                     <button onclick="compartilharAppMotoboy()" class="btn-salvar-lanche" style="width: auto; padding: 10px 20px; background: var(--text-green); border-color: var(--text-green); color: #000; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold;">
@@ -262,6 +263,33 @@
                     </div>
                 </div>
 
+            </div>
+
+            <div class="cardapio-container" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 30px;">
+                <div class="painel-form">
+                    <div class="painel-header">
+                        <h3 style="color: white; font-size: 16px;">📍 Cadastrar Bairro</h3>
+                    </div>
+                    <div class="painel-body">
+                        <div class="input-group">
+                            <label>Nome do Bairro</label>
+                            <input type="text" id="bairro-nome" class="input-padrao" placeholder="Ex: Centro">
+                        </div>
+                        <div class="input-group">
+                            <label>Taxa de Entrega (R$)</label>
+                            <input type="number" id="bairro-taxa" class="input-padrao" placeholder="0.00 (0 para Grátis)">
+                        </div>
+                        <button class="btn-salvar-lanche" onclick="salvarBairro()">✅ Salvar Bairro</button>
+                    </div>
+                </div>
+
+                <div class="painel-lista">
+                    <div class="painel-header">
+                        <h3 style="color: white; font-size: 16px;">🗺️ Bairros e Taxas Ativas</h3>
+                    </div>
+                    <div id="grid-bairros" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+                        </div>
+                </div>
             </div>
         </div>
 

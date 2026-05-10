@@ -316,12 +316,11 @@ onSnapshot(configRef, (docSnap) => {
         const dados = docSnap.data();
         timestampAberturaCaixa = dados.aberturaCaixa || 0; 
 
-        // Atualiza o campo de taxa com o valor do banco
-        if(dados.taxaEntrega !== undefined) {
-            const inputTaxa = document.getElementById('in-taxa-entrega');
-            if(inputTaxa) inputTaxa.value = dados.taxaEntrega.toFixed(2);
+        // Sincroniza o botão de entrega grátis
+        const switchGratis = document.getElementById('switch-entrega-gratis');
+        if(switchGratis) {
+            switchGratis.checked = dados.entregaGratisGeral || false;
         }
-
         if (dados.status === 'aberto') {
             btn.innerText = '🟢 LOJA ABERTA'; btn.className = 'status-loja loja-aberta';
         } else {
@@ -825,14 +824,14 @@ window.compartilharAppMotoboy = async function() {
     }
 };
 
-window.salvarTaxaGestor = async function() {
-    const novaTaxa = parseFloat(document.getElementById('in-taxa-entrega').value);
-    if(isNaN(novaTaxa) || novaTaxa < 0) return alert("Digite um valor válido!");
-
+window.toggleEntregaGratis = async function() {
+    const status = document.getElementById('switch-entrega-gratis').checked;
     try {
-        await updateDoc(configRef, { taxaEntrega: novaTaxa });
-        alert("✅ Taxa de entrega atualizada!");
-    } catch(e) { alert("Erro ao atualizar: " + e); }
+        await updateDoc(configRef, { entregaGratisGeral: status });
+    } catch(e) { 
+        alert("Erro ao aplicar promoção.");
+        document.getElementById('switch-entrega-gratis').checked = !status;
+    }
 }
 
 // ==========================================
@@ -1132,3 +1131,55 @@ window.definirEstoque = async function() {
         } catch (e) { alert("Erro ao salvar estoque."); }
     }
 };
+
+// ==========================================
+// GESTÃO DE BAIRROS E TAXAS DE ENTREGA
+// ==========================================
+
+// 1. Escuta os bairros em tempo real
+onSnapshot(collection(db, "bairros"), (snapshot) => {
+    const grid = document.getElementById('grid-bairros');
+    if(!grid) return;
+    grid.innerHTML = '';
+
+    snapshot.forEach((docSnap) => {
+        const b = docSnap.data();
+        const id = docSnap.id;
+        const taxaTexto = b.taxa === 0 ? "GRÁTIS" : `R$ ${b.taxa.toFixed(2).replace('.', ',')}`;
+        const corTaxa = b.taxa === 0 ? "var(--text-green)" : "white";
+
+        grid.innerHTML += `
+            <div class="item-row" style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
+                <div>
+                    <strong style="color: white;">${b.nome}</strong><br>
+                    <span style="font-size: 12px; color: ${corTaxa}; font-weight: bold;">Taxa: ${taxaTexto}</span>
+                </div>
+                <button onclick="excluirBairro('${id}')" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>
+            </div>
+        `;
+    });
+});
+
+window.salvarBairro = async function() {
+    const nome = document.getElementById('bairro-nome').value.trim();
+    const taxa = parseFloat(document.getElementById('bairro-taxa').value);
+
+    if(!nome || isNaN(taxa)) return alert("Preencha o nome e a taxa corretamente!");
+
+    try {
+        await addDoc(collection(db, "bairros"), {
+            nome: nome,
+            taxa: taxa,
+            criadoEm: Date.now()
+        });
+        document.getElementById('bairro-nome').value = '';
+        document.getElementById('bairro-taxa').value = '';
+        alert("Bairro cadastrado com sucesso!");
+    } catch (e) { alert("Erro ao salvar: " + e); }
+}
+
+window.excluirBairro = async function(id) {
+    if(confirm("Deseja remover este bairro da lista?")) {
+        await deleteDoc(doc(db, "bairros", id));
+    }
+}
