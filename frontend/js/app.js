@@ -479,7 +479,9 @@ window.prepararPagamento = async function() {
         const CIDADE = "Cruzeiro do Sul"; // Cidade da sua conta bancária (Sem acentos)
         // ----------------------------------------------------------------
 
-        const valorFormatado = parseFloat(document.getElementById('modal-total-final').innerText.replace('R$', '').trim().replace('.', '').replace(',', '.'));
+        // Proteção máxima: Remove qualquer letra, espaço ou símbolo, deixando só os números e a vírgula
+        const textoValor = document.getElementById('modal-total-final').innerText;
+        const valorFormatado = parseFloat(textoValor.replace(/[^\d,]/g, '').replace(',', '.'));
         
         // Gera o BR Code oficial com o valor travado
         const codigoPronto = gerarPayloadPix(CHAVE_PIX, NOME_TITULAR, CIDADE, valorFormatado);
@@ -549,8 +551,8 @@ window.finalizarEnvioNuvem = async function(abrirWhatsApp = false) {
 // O MATEMÁTICO: ALGORITMO OFICIAL DO BANCO CENTRAL DO BRASIL (BR CODE)
 function gerarPayloadPix(chave, nome, cidade, valor) {
     chave = chave.trim(); 
-    nome = nome.trim().substring(0,25).normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
-    cidade = cidade.trim().substring(0,15).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    nome = nome.trim().substring(0,25).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim(); 
+    cidade = cidade.trim().substring(0,15).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
     
     let payload = [
         "000201",
