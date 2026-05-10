@@ -126,17 +126,25 @@
                     <input type="text" id="cliente-rua" placeholder="Ex: Av. Coronel Mâncio Lima">
                 </div>
                 
-                <div style="display: flex; gap: 10px;">
-                    <div class="form-grupo" style="flex: 1;">
-                        <label>Número:</label>
-                        <input type="text" id="cliente-numero" placeholder="Ex: 2191">
-                    </div>
-                    <div class="form-grupo" style="flex: 3;">
-                        <label>Bairro:</label>
-                        <select id="cliente-bairro" onchange="atualizarTaxaPorBairro()" style="background: var(--bg-color); color: white; border: 1px solid #444; padding: 10px; border-radius: 6px;">
-                            <option value="">Selecione seu bairro...</option>
-                        </select>
-                    </div>
+                <div class="form-grupo">
+                    <label>Número:</label>
+                    <input type="text" id="cliente-numero" placeholder="Ex: 2191">
+                </div>
+                
+                <div class="form-grupo">
+                    <label>Bairro:</label>
+                    <select id="cliente-bairro" onchange="atualizarTaxaPorBairro()" style="background: var(--bg-color); color: white; border: 1px solid #444; padding: 12px; border-radius: 6px; width: 100%; max-width: 100%; font-size: 16px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; cursor: pointer;">
+                        <option value="">Selecione seu bairro...</option>
+                    </select>
+                </div>
+
+                <div style="margin-top: -5px; margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 12px; border: 1px solid #333; text-align: center;">
+                    <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">📍 Seu bairro não está listado?</p>
+                    <a href="https://api.whatsapp.com/send?phone=556899106457&text=Olá! Meu bairro não aparece na lista do cardápio, gostaria de verificar a entrega." 
+                       target="_blank" 
+                       style="display: inline-flex; align-items: center; gap: 8px; background: #25d366; color: black; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: bold; transition: 0.2s;">
+                        💬 Falar Conosco
+                    </a>
                 </div>
 
                 <div class="form-grupo" style="margin-bottom: 0;">
@@ -153,9 +161,11 @@
             <div class="form-grupo" style="margin-top: 16px;">
                 <label>Forma de Pagamento:</label>
                 <select id="forma-pagamento" onchange="verificarOpcaoTroco()">
-                    <option value="pix-manual">Pix (Copia e Cola - Pagar Agora)</option>
-                    <option value="pagar-na-entrega">Cartão (Maquininha) ou Dinheiro no Local</option>
-                </select>
+                        <option value="pix-manual">Pix (Copia e Cola - Pagar Agora)</option>
+                        <option value="dinheiro">Dinheiro (Precisa de Troco?)</option>
+                        <option value="cartao-credito">Cartão de Crédito (Levar Maquininha)</option>
+                        <option value="cartao-debito">Cartão de Débito (Levar Maquininha)</option>
+                    </select>
             </div>
 
             <div class="form-grupo" id="grupo-troco" style="display: none; margin-top: 10px; background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 8px; border: 1px dashed var(--text-orange);">
@@ -303,7 +313,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- NOVO SISTEMA DE TAXA POR BAIRRO ---
+        // --- SISTEMA DE TAXA POR BAIRRO COM ORDEM ALFABÉTICA ---
         let listaBairrosGlobal = [];
         
         onSnapshot(collection(db, "bairros"), (snapshot) => {
@@ -312,10 +322,17 @@
             select.innerHTML = '<option value="">Selecione seu bairro...</option>';
             listaBairrosGlobal = [];
 
+            // 1. Puxa os bairros do Firebase
             snapshot.forEach(doc => {
-                const bairro = doc.data();
-                listaBairrosGlobal.push(bairro);
-                select.innerHTML += `<option value="${bairro.nome}">${bairro.nome}</option>`;
+                listaBairrosGlobal.push(doc.data());
+            });
+
+            // 2. CLASSIFICA EM ORDEM ALFABÉTICA (A-Z)
+            listaBairrosGlobal.sort((a, b) => a.nome.localeCompare(b.nome));
+
+            // 3. Renderiza as opções já ordenadas
+            listaBairrosGlobal.forEach(b => {
+                select.innerHTML += `<option value="${b.nome}">${b.nome}</option>`;
             });
         });
 
@@ -461,9 +478,11 @@
             else if (dadosDoPedidoAtual.tipo === "local") tipoBonito = "Consumir no Local";
 
             let pagBonito = dadosDoPedidoAtual.pagamento;
-            if (pagBonito === "pagar-na-entrega") pagBonito = "Pagar na Entrega";
-            else if (pagBonito === "pix-app") pagBonito = "Pix (App)";
-            else if (pagBonito === "cartao-app") pagBonito = "Cartão de Crédito";
+            if (pagBonito === "pagar-na-entrega" || pagBonito === "dinheiro") pagBonito = "Dinheiro no Local";
+            else if (pagBonito === "cartao-credito") pagBonito = "Cartão de Crédito (Local)";
+            else if (pagBonito === "cartao-debito") pagBonito = "Cartão de Débito (Local)";
+            else if (pagBonito === "pix-app" || pagBonito === "pix-manual") pagBonito = "Pix (Já Pago)";
+            else if (pagBonito === "cartao-app") pagBonito = "Cartão de Crédito (App)";
 
             // Endereço dinâmico
             const linhaEnd = document.getElementById('linha-endereco');

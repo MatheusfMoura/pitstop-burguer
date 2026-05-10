@@ -414,7 +414,7 @@ window.verificarOpcaoTroco = function() {
     const pagamento = document.getElementById('forma-pagamento').value;
     const divTroco = document.getElementById('grupo-troco');
     
-    if (pagamento === 'pagar-na-entrega') {
+    if (pagamento === 'dinheiro') {
         divTroco.style.display = 'flex';
     } else {
         divTroco.style.display = 'none';
@@ -432,8 +432,17 @@ window.prepararPagamento = async function() {
     let obsInput = document.getElementById('cliente-obs').value.trim();
     let trocoInput = document.getElementById('cliente-troco') ? document.getElementById('cliente-troco').value.trim() : '';
     
-    if (formaPagamento === 'pagar-na-entrega' && trocoInput !== '') {
-        const avisoTroco = `🚨 LEVAR TROCO PARA R$ ${trocoInput}`;
+    if (formaPagamento === 'dinheiro' && trocoInput !== '') {
+        // Descobre o valor total exato do pedido para fazer a matemática
+        const totalTexto = document.getElementById('modal-total-final').innerText;
+        const totalNum = parseFloat(totalTexto.replace('R$', '').trim().replace('.', '').replace(',', '.'));
+        const valorParaTroco = parseFloat(trocoInput.replace(',', '.'));
+        
+        let avisoTroco = `🚨 LEVAR TROCO PARA R$ ${trocoInput}`;
+        if (!isNaN(valorParaTroco) && valorParaTroco > totalNum) {
+            const trocoExato = (valorParaTroco - totalNum).toFixed(2).replace('.', ',');
+            avisoTroco = `🚨 LEVAR TROCO PARA R$ ${valorParaTroco.toFixed(2).replace('.', ',')} (Devolver R$ ${trocoExato} de troco)`;
+        }
         obsInput = obsInput ? `${avisoTroco} | ${obsInput}` : avisoTroco;
     }
     // ------------------------------------------------
@@ -465,8 +474,8 @@ window.prepararPagamento = async function() {
 
     if (formaPagamento === 'pix-manual') {
         // --- 🔴 ATENÇÃO: COLOQUE AQUI OS SEUS DADOS BANCÁRIOS REAIS 🔴 ---
-        const CHAVE_PIX = "65.687.354/0001-00"; // Sua chave Pix (CPF, CNPJ, Celular ou Email)
-        const NOME_TITULAR = "CAREN SAIURI SILVA FIGUEIREDO"; // Seu nome como aparece no banco (Sem acentos)
+        const CHAVE_PIX = "68999729257"; // Sua chave Pix (CPF, CNPJ, Celular ou Email)
+        const NOME_TITULAR = "UELMISSON F. SANTIAGO"; // Seu nome como aparece no banco (Sem acentos)
         const CIDADE = "Cruzeiro do Sul"; // Cidade da sua conta bancária (Sem acentos)
         // ----------------------------------------------------------------
 

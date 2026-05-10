@@ -228,68 +228,72 @@
                 </div>
             </header>
 
-            <div class="cardapio-container">
+            <div style="padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; height: 100%;">
                 
-                <div class="painel-form">
-                    <div class="painel-header">
-                        <h3 id="titulo-form-motoboy" style="color: white; font-size: 16px;">👤 Novo Motoboy</h3>
-                    </div>
-                    <div class="painel-body">
-                        <div class="input-group">
-                            <label>Nome Completo</label>
-                            <input type="text" id="moto-nome" class="input-padrao" placeholder="Ex: Carlos Oliveira">
+                <div style="display: flex; gap: 30px; min-height: 380px;">
+                    <div class="painel-form" style="height: 100%;">
+                        <div class="painel-header">
+                            <h3 id="titulo-form-motoboy" style="color: white; font-size: 16px;">👤 Novo Motoboy</h3>
                         </div>
-                        <div class="input-group">
-                            <label>Telefone / WhatsApp</label>
-                            <input type="text" id="moto-fone" class="input-padrao" placeholder="(00) 00000-0000">
-                        </div>
-                        <div class="input-group">
-                            <label>Placa do Veículo (Opcional)</label>
-                            <input type="text" id="moto-placa" class="input-padrao" placeholder="ABC-1234">
-                        </div>
+                        <div class="painel-body">
+                            <div class="input-group">
+                                <label>Nome Completo</label>
+                                <input type="text" id="moto-nome" class="input-padrao" placeholder="Ex: Carlos Oliveira">
+                            </div>
+                            <div class="input-group">
+                                <label>Telefone / WhatsApp</label>
+                                <input type="text" id="moto-fone" class="input-padrao" placeholder="(00) 00000-0000">
+                            </div>
+                            <div class="input-group">
+                                <label>Placa do Veículo (Opcional)</label>
+                                <input type="text" id="moto-placa" class="input-padrao" placeholder="ABC-1234">
+                            </div>
 
-                        <div style="display: flex; gap: 10px; margin-top: 20px;">
-                            <button id="btn-salvar-motoboy" class="btn-salvar-lanche" onclick="salvarMotoboy()">✅ Autorizar Motoboy</button>
-                            <button id="btn-cancelar-moto" class="btn-salvar-lanche" onclick="limparFormMotoboy()" style="display: none; background: transparent; color: var(--text-muted); border-color: var(--border-color); flex: 0.5;">Cancelar</button>
+                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                <button id="btn-salvar-motoboy" class="btn-salvar-lanche" onclick="salvarMotoboy()">✅ Autorizar Motoboy</button>
+                                <button id="btn-cancelar-moto" class="btn-salvar-lanche" onclick="limparFormMotoboy()" style="display: none; background: transparent; color: var(--text-muted); border-color: var(--border-color); flex: 0.5;">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="painel-lista" style="height: 100%;">
+                        <div class="painel-header">
+                            <h3 style="color: white; font-size: 16px;">🛵 Entregadores Ativos</h3>
+                        </div>
+                        <div id="grid-motoboys" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: calc(100% - 60px);">
                         </div>
                     </div>
                 </div>
 
-                <div class="painel-lista">
-                    <div class="painel-header">
-                        <h3 style="color: white; font-size: 16px;">🛵 Entregadores Ativos</h3>
+                <div style="border-top: 1px dashed #444; margin: 10px 0;"></div>
+
+                <div style="display: flex; gap: 30px; min-height: 450px; padding-bottom: 50px;">
+                    <div class="painel-form" style="height: 100%;">
+                        <div class="painel-header">
+                            <h3 style="color: white; font-size: 16px;">📍 Cadastrar Bairro</h3>
+                        </div>
+                        <div class="painel-body">
+                            <div class="input-group">
+                                <label>Nome do Bairro</label>
+                                <input type="text" id="bairro-nome" class="input-padrao" placeholder="Ex: Centro">
+                            </div>
+                            <div class="input-group">
+                                <label>Taxa de Entrega (R$)</label>
+                                <input type="number" id="bairro-taxa" class="input-padrao" placeholder="0.00 (0 para Grátis)">
+                            </div>
+                            <button class="btn-salvar-lanche" onclick="salvarBairro()" style="margin-top: 20px;">✅ Salvar Bairro</button>
+                        </div>
                     </div>
-                    <div id="grid-motoboys" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
+
+                    <div class="painel-lista" style="height: 100%;">
+                        <div class="painel-header">
+                            <h3 style="color: white; font-size: 16px;">🗺️ Bairros e Taxas Ativas</h3>
+                        </div>
+                        <div id="grid-bairros" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: calc(100% - 60px);">
+                            </div>
                     </div>
                 </div>
 
-            </div>
-
-            <div class="cardapio-container" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 30px;">
-                <div class="painel-form">
-                    <div class="painel-header">
-                        <h3 style="color: white; font-size: 16px;">📍 Cadastrar Bairro</h3>
-                    </div>
-                    <div class="painel-body">
-                        <div class="input-group">
-                            <label>Nome do Bairro</label>
-                            <input type="text" id="bairro-nome" class="input-padrao" placeholder="Ex: Centro">
-                        </div>
-                        <div class="input-group">
-                            <label>Taxa de Entrega (R$)</label>
-                            <input type="number" id="bairro-taxa" class="input-padrao" placeholder="0.00 (0 para Grátis)">
-                        </div>
-                        <button class="btn-salvar-lanche" onclick="salvarBairro()">✅ Salvar Bairro</button>
-                    </div>
-                </div>
-
-                <div class="painel-lista">
-                    <div class="painel-header">
-                        <h3 style="color: white; font-size: 16px;">🗺️ Bairros e Taxas Ativas</h3>
-                    </div>
-                    <div id="grid-bairros" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto;">
-                        </div>
-                </div>
             </div>
         </div>
 

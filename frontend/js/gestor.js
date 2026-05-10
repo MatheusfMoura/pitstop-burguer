@@ -380,9 +380,11 @@ window.abrirGaveta = function(id) {
     else if(pedido.tipo === "retirada") { tipoTexto = "Retirar no Balcão"; corTipo = "var(--soft-orange)"; corTextoTipo = "var(--text-orange)"; iconTipo = "🛍️"; }
 
     let pagTexto = pedido.pagamento; let iconPag = "💳"; let corTextoPag = "white";
-    if(pagTexto === "pagar-na-entrega") { pagTexto = "Pagar na Entrega"; iconPag = "💵"; corTextoPag = "var(--text-orange)"; }
-    if(pagTexto === "pix-app") { pagTexto = "Pix (Pago no App)"; iconPag = "❇️"; corTextoPag = "var(--text-green)"; }
-    if(pagTexto === "cartao-app") { pagTexto = "Cartão (App)"; iconPag = "💳"; }
+    if(pagTexto === "pagar-na-entrega" || pagTexto === "dinheiro") { pagTexto = "Dinheiro no Local"; iconPag = "💵"; corTextoPag = "var(--text-orange)"; }
+    else if(pagTexto === "cartao-credito") { pagTexto = "Crédito (Levar Maquineta)"; iconPag = "💳"; corTextoPag = "var(--text-blue)"; }
+    else if(pagTexto === "cartao-debito") { pagTexto = "Débito (Levar Maquineta)"; iconPag = "💳"; corTextoPag = "var(--text-blue)"; }
+    else if(pagTexto === "pix-app" || pagTexto === "pix-manual") { pagTexto = "Pix (Já Pago)"; iconPag = "❇️"; corTextoPag = "var(--text-green)"; }
+    else if(pagTexto === "cartao-app") { pagTexto = "Cartão (App)"; iconPag = "💳"; }
 
     // Injetando o layout direto no nome do cliente com o botão do WhatsApp
     document.getElementById('drawer-cliente').innerHTML = `
