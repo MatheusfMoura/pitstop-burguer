@@ -474,8 +474,8 @@ window.prepararPagamento = async function() {
 
     if (formaPagamento === 'pix-manual') {
         // --- 🔴 ATENÇÃO: COLOQUE AQUI OS SEUS DADOS BANCÁRIOS REAIS 🔴 ---
-        const CHAVE_PIX = "68999729257"; // Sua chave Pix (CPF, CNPJ, Celular ou Email)
-        const NOME_TITULAR = "UELMISSON F. SANTIAGO"; // Seu nome como aparece no banco (Sem acentos)
+        const CHAVE_PIX = "65687354000100"; // Sua chave Pix (CPF, CNPJ, Celular ou Email)
+        const NOME_TITULAR = "CAREN SAIURI SILVA FIGUEIREDO"; // Seu nome como aparece no banco (Sem acentos)
         const CIDADE = "Cruzeiro do Sul"; // Cidade da sua conta bancária (Sem acentos)
         // ----------------------------------------------------------------
 

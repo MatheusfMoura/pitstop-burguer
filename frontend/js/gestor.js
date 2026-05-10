@@ -370,9 +370,17 @@ window.abrirGaveta = function(id) {
 
     document.getElementById('drawer-id').innerText = `#${id.substring(0,6).toUpperCase()} • ⏰ ${dataPedidoFormatada}`;
 
-    // --- LÓGICA DO WHATSAPP ---
+    // --- LÓGICA DO WHATSAPP COM RESUMO DO PEDIDO ---
     const whatsAppLimpo = pedido.whatsapp ? pedido.whatsapp.replace(/\D/g, '') : '';
-    const linkWhats = whatsAppLimpo ? `https://api.whatsapp.com/send?phone=55${whatsAppLimpo}&text=Olá ${pedido.cliente}, tudo bem? Aqui é do Pitstop Burguer sobre o seu pedido #${id.substring(0,6).toUpperCase()}` : '#';
+    
+    let listaItensZap = "";
+    if (pedido.itens && pedido.itens.length > 0) {
+        listaItensZap = pedido.itens.map(item => `▪️ ${item.quantidade}x ${item.nome.replace(' (Personalizado)', '')}`).join('\n');
+    }
+    
+    const msgZap = `Olá ${pedido.cliente}, tudo bem? Aqui é do Pitstop Burguer sobre o seu pedido *#${id.substring(0,6).toUpperCase()}*.\n\n📦 *Resumo:*\n${listaItensZap}\n\n*Total:* ${pedido.totalGeral}`;
+    
+    const linkWhats = whatsAppLimpo ? `https://api.whatsapp.com/send?phone=55${whatsAppLimpo}&text=${encodeURIComponent(msgZap)}` : '#';
     
     // --- LÓGICA DAS CAIXAS GIGANTES DE TIPO E PAGAMENTO ---
     let tipoTexto = "Comer no Local"; let corTipo = "var(--soft-blue)"; let corTextoTipo = "var(--text-blue)"; let iconTipo = "🍽️"; let mostraEnd = false;
