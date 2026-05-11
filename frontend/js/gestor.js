@@ -1231,56 +1231,78 @@ window.imprimirComanda = function(id) {
         dataFormatada = d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     }
 
-    // Monta a lista de itens
+    // Monta a lista de itens com PREÇOS alinhados à direita e Fonte Monospace
     let itensHtml = '';
     if(pedido.itens) {
         pedido.itens.forEach(item => {
-            itensHtml += `<div style="font-size: 14px; margin-bottom: 2px;"><b>${item.quantidade}x ${item.nome.replace(' (Personalizado)', '')}</b></div>`;
+            let pco = (typeof item.preco === 'number') ? item.preco.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : item.preco;
+            if(!pco) pco = ""; // Caso seja um item sem preço (como em pedidos antigos)
+
+            itensHtml += `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 14px; margin-bottom: 2px;">
+                    <span style="flex: 1; padding-right: 10px;"><b>${item.quantidade}x</b> ${item.nome.replace(' (Personalizado)', '')}</span>
+                    <span style="font-weight: bold; white-space: nowrap;">${pco}</span>
+                </div>
+            `;
             
             if(item.listaAdicionais && item.listaAdicionais.length > 0) {
-                itensHtml += `<div style="font-size: 12px; padding-left: 10px;">+ ${item.listaAdicionais.join(', ')}</div>`;
+                // Coloca um adicional por linha para ficar fácil da cozinha ler
+                itensHtml += `<div style="font-size: 12px; padding-left: 20px;">+ ${item.listaAdicionais.join('<br>+ ')}</div>`;
             }
             if(item.obs && item.obs.trim() !== '') {
-                itensHtml += `<div style="font-size: 12px; font-weight: bold; padding-left: 10px;">** OBS: ${item.obs}</div>`;
+                itensHtml += `<div style="font-size: 12px; font-weight: bold; padding-left: 20px;">* Obs: ${item.obs}</div>`;
             }
-            itensHtml += `<div style="margin-bottom: 8px;"></div>`;
+            itensHtml += `<div style="margin-bottom: 10px;"></div>`;
         });
     }
 
-    // Desenha o Recibo HTML ISOLADO (O Segredo para não travar o site)
+    let pagamentoTexto = pedido.pagamento;
+    if (pagamentoTexto === 'pagar-na-entrega') pagamentoTexto = 'Dinheiro/Máquina na Entrega';
+
+    // Desenha o Recibo HTML ISOLADO (Layout Premium de Cupom Fiscal)
     const reciboHTML = `
         <html>
         <head>
             <style>
-                @page { margin: 0; } /* Zera a margem do Windows */
-                body { margin: 0; padding: 4px; width: 76mm; color: black; font-family: sans-serif; box-sizing: border-box; }
+                @page { margin: 0; } 
+                /* O padding-left de 15px empurra o texto para a direita, evitando o corte das letras iniciais */
+                body { margin: 0; padding: 10px 15px 10px 15px; width: 78mm; color: black; font-family: 'Courier New', Courier, monospace; box-sizing: border-box; }
+                .linha-tracejada { border-top: 1px dashed black; margin: 10px 0; }
+                .flex-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
             </style>
         </head>
         <body>
             <h2 style="text-align: center; margin: 0 0 5px 0; font-size: 18px; text-transform: uppercase;">PITSTOP BURGUER</h2>
-            <div style="text-align: center; font-size: 12px;">Pedido: #${id.substring(0,6).toUpperCase()}</div>
+            <div style="text-align: center; font-size: 12px; margin-bottom: 2px;">Pedido: #${id.substring(0,6).toUpperCase()}</div>
             <div style="text-align: center; font-size: 12px; margin-bottom: 10px;">${dataFormatada}</div>
             
-            <div style="border-top: 1px dashed black; margin-bottom: 10px;"></div>
+            <div class="linha-tracejada"></div>
             
-            <div style="font-size: 14px; margin-bottom: 5px;"><b>Cliente:</b> ${pedido.cliente}</div>
-            <div style="font-size: 14px; margin-bottom: 5px;"><b>Tipo:</b> ${pedido.tipo.toUpperCase()}</div>
-            ${pedido.tipo === 'entrega' ? `<div style="font-size: 14px; margin-bottom: 5px;"><b>Endereço:</b> ${pedido.endereco}</div>` : ''}
-            <div style="font-size: 14px; margin-bottom: 10px;"><b>Pgto:</b> ${pedido.pagamento}</div>
+            <div style="font-size: 14px; margin-bottom: 4px;"><b>Cliente:</b> ${pedido.cliente}</div>
+            <div style="font-size: 14px; margin-bottom: 4px;"><b>Tipo:</b> ${pedido.tipo.toUpperCase()}</div>
+            ${pedido.tipo === 'entrega' ? `<div style="font-size: 14px; margin-bottom: 4px;"><b>Endereço:</b> ${pedido.endereco}</div>` : ''}
+            <div style="font-size: 14px; margin-bottom: 10px;"><b>Pgto:</b> ${pagamentoTexto}</div>
             
-            <div style="border-top: 1px dashed black; margin-bottom: 10px;"></div>
+            <div class="linha-tracejada"></div>
+            <div style="font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px;">ITENS DO PEDIDO</div>
             
             <div style="margin-bottom: 10px;">
                 ${itensHtml}
             </div>
             
-            <div style="border-top: 1px dashed black; margin-bottom: 10px;"></div>
+            <div class="linha-tracejada"></div>
             
-            ${pedido.observacoes && pedido.observacoes !== 'Nenhuma' ? `<div style="font-size: 13px; margin-bottom: 10px; border: 1px solid black; padding: 5px;"><b>OBS GERAIS DO PEDIDO:</b><br>${pedido.observacoes}</div>` : ''}
+            ${pedido.observacoes && pedido.observacoes !== 'Nenhuma' ? `<div style="font-size: 14px; margin-bottom: 10px; border: 1px solid black; padding: 6px;"><b>OBS GERAIS:</b><br>${pedido.observacoes}</div><div class="linha-tracejada"></div>` : ''}
             
-            <h3 style="text-align: right; margin: 0; font-size: 16px;">Total: ${pedido.totalGeral}</h3>
+            ${pedido.subtotal ? `<div class="flex-row"><span>Subtotal:</span><span>${pedido.subtotal}</span></div>` : ''}
+            ${pedido.tipo === 'entrega' && pedido.taxaEntrega ? `<div class="flex-row"><span>Taxa de Entrega:</span><span>${pedido.taxaEntrega}</span></div>` : ''}
             
-            <div style="text-align: center; margin-top: 20px; font-size: 11px;">Obrigado pela preferência!</div>
+            <div class="flex-row" style="margin-top: 10px; font-size: 18px; font-weight: bold;">
+                <span>TOTAL:</span>
+                <span>${pedido.totalGeral}</span>
+            </div>
+            
+            <div style="text-align: center; margin-top: 25px; font-size: 12px; font-weight: bold;">Obrigado pela preferência!</div>
             
             <br><br><br><br>
         </body>
