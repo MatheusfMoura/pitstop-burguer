@@ -42,6 +42,9 @@
         <div class="menu-item" id="btn-menu-motoboys" onclick="mudarTela('motoboys')" title="Gestão de Motoboys">
             <span class="material-symbols-outlined" style="font-size: 26px;">two_wheeler</span>
         </div>
+        <div class="menu-item" id="btn-menu-estoque" onclick="mudarTela('estoque')" title="Controle de Estoque">
+            <span class="material-symbols-outlined" style="font-size: 26px;">inventory_2</span>
+        </div>
         <div class="menu-item" id="btn-menu-relatorios" onclick="mudarTela('relatorios')" title="Dashboard e Relatórios">
             <span class="material-symbols-outlined" style="font-size: 26px;">bar_chart</span>
         </div>
@@ -297,35 +300,69 @@
             </div>
         </div>
 
-        <div id="tela-relatorios" class="tela">
+        <div id="tela-estoque" class="tela">
             <header style="border-bottom: 1px solid var(--border-color);">
+                <div class="header-title">
+                    <h1>Controle de Estoque</h1>
+                    <p>Gerencie a quantidade física das suas bebidas, porções e itens limitados.</p>
+                </div>
+            </header>
+            <div class="cardapio-container" style="overflow-y: auto;">
+                <div class="painel-lista" style="width: 100%; height: fit-content;">
+                    <div class="painel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="color: white; font-size: 16px;">📦 Estoque de Produtos no Site</h3>
+                        <select id="filtro-categoria-estoque" onchange="filtrarEstoque()" class="input-padrao" style="width: auto; max-width: 220px; padding: 8px 12px; background: var(--bg-main); font-weight: bold; cursor: pointer;">
+                            <option value="todas">🧾 Todas as Categorias</option>
+                            <option value="Hamburguers">🍔 Hamburguers</option>
+                            <option value="Sanduíches">🥪 Sanduíches</option>
+                            <option value="Porções">🍟 Porções</option>
+                            <option value="Bebidas">🥤 Bebidas</option>
+                            <option value="Sobremesas">🍦 Sobremesas</option>
+                        </select>
+                    </div>
+                    <div style="padding: 20px;">
+                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Deixe a caixinha em branco se o produto for infinito (ex: Lanches feitos na hora).</p>
+                        <div id="grid-estoque" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px;">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tela-relatorios" class="tela">
+            <header style="border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <div class="header-title">
                     <h1>Dashboard Financeiro</h1>
                     <p>Acompanhe o desempenho, vendas e faturamento da sua lanchonete.</p>
                 </div>
-                <button onclick="carregarDashboard()" class="btn-salvar-lanche" style="width: auto; padding: 10px 20px;">🔄 Atualizar Dados</button>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <select id="filtro-mes-dashboard" onchange="carregarDashboard()" class="input-padrao" style="width: auto; padding: 10px 15px; background: var(--bg-card); border-color: var(--border-color); color: white; outline: none; cursor: pointer; font-weight: bold;">
+                        <option value="todos">Todos os Meses</option>
+                    </select>
+                    <button onclick="carregarDashboard()" class="btn-salvar-lanche" style="width: auto; padding: 10px 20px;">🔄 Atualizar Dados</button>
+                </div>
             </header>
 
             <div class="cardapio-container" style="flex-direction: column; overflow-y: auto;">
                 
                 <div style="display: flex; gap: 20px; margin-bottom: 10px;">
                     <div class="metric-box" style="flex: 1; background: var(--bg-sidebar); padding: 25px; text-align: left;">
-                        <span style="font-size: 13px;">Faturamento Global</span>
+                        <span style="font-size: 13px;">Faturamento (Mês)</span>
                         <strong id="dash-faturamento" style="font-size: 32px; color: var(--text-green); display: block; margin-top: 10px;">R$ 0,00</strong>
                     </div>
                     <div class="metric-box" style="flex: 1; background: var(--bg-sidebar); padding: 25px; text-align: left;">
-                        <span style="font-size: 13px;">Pedidos Concluídos</span>
+                        <span style="font-size: 13px;">Pedidos Concluídos (Mês)</span>
                         <strong id="dash-pedidos" style="font-size: 32px; color: var(--text-blue); display: block; margin-top: 10px;">0</strong>
                     </div>
                     <div class="metric-box" style="flex: 1; background: var(--bg-sidebar); padding: 25px; text-align: left;">
-                        <span style="font-size: 13px;">Ticket Médio (Por Pedido)</span>
-                        <strong id="dash-ticket" style="font-size: 32px; color: var(--text-orange); display: block; margin-top: 10px;">R$ 0,00</strong>
+                        <span style="font-size: 13px;">Total de Lanches/Itens Vendidos</span>
+                        <strong id="dash-produtos-vendidos" style="font-size: 32px; color: var(--text-orange); display: block; margin-top: 10px;">0</strong>
                     </div>
                 </div>
 
                 <div style="display: flex; gap: 20px; flex: 1; min-height: 350px;">
                     <div style="flex: 2; background: var(--bg-sidebar); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column;">
-                        <h3 style="margin-bottom: 15px; font-size: 16px; color: white;">📈 Receita por Dia</h3>
+                        <h3 style="margin-bottom: 15px; font-size: 16px; color: white;">📈 Faturamento Diário por Categoria</h3>
                         <div style="flex: 1; position: relative;">
                             <canvas id="graficoFaturamento"></canvas>
                         </div>

@@ -96,8 +96,15 @@ window.renderizarCardapio = function() {
 
             const fotoUrl = (produto.imagem && produto.imagem.startsWith('http')) ? produto.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
             
+            // 4. LÓGICA DE ESTOQUE ESGOTADO (TRAVA O CLIENTE)
+            const esgotado = (produto.estoque !== undefined && produto.estoque !== null && produto.estoque <= 0);
+            const acaoClick = esgotado ? "" : `onclick="abrirModalProduto(${produto.idProduto})"`;
+            const opacidadeCard = esgotado ? "opacity: 0.5; filter: grayscale(1);" : "";
+            const badgeEsgotado = esgotado ? `<div style="position: absolute; top: 10px; right: 10px; background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 10; transform: rotate(15deg); box-shadow: 0 4px 10px rgba(0,0,0,0.5);">ESGOTADO</div>` : '';
+
             grade.innerHTML += `
-                <div class="card-premium" onclick="abrirModalProduto(${produto.idProduto})">
+                <div class="card-premium" style="position: relative; ${opacidadeCard}" ${acaoClick}>
+                    ${badgeEsgotado}
                     <div class="card-prem-info">
                         <div>
                             <h3 class="card-prem-titulo">${produto.nome}</h3>

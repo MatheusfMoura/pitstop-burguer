@@ -130,7 +130,84 @@ onSnapshot(qProdutos, (snapshot) => {
             selectPDV.innerHTML += `<option value="${p.idFirebase}">${p.nome} - R$ ${p.preco.toFixed(2).replace('.',',')}</option>`;
         });
     }
+
+    // --- ALIMENTA A TELA DE ESTOQUE NO GESTOR ---
+    const gridEstoque = document.getElementById('grid-estoque');
+    if(gridEstoque) {
+        gridEstoque.innerHTML = '';
+        produtosNoBanco.forEach(p => {
+            const estoqueAtual = (p.estoque !== undefined && p.estoque !== null) ? p.estoque : '';
+            const badgeEsgotado = (p.estoque !== undefined && p.estoque !== null && p.estoque <= 0) ? `<span style="background: var(--soft-red); color: var(--text-red); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">ESGOTADO</span>` : '';
+            
+            // Puxa a mesma foto cadastrada lá na aba do Cardápio!
+            const fotoUrl = (p.imagem && p.imagem.startsWith('http')) ? p.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+            
+            // Salvamos a categoria invisível no cartão para o filtro ler
+            const catFiltro = p.categoria || 'Outros';
+            
+            gridEstoque.innerHTML += `
+                <div class="cartao-estoque-item" data-categoria="${catFiltro}" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--text-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <img src="${fotoUrl}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid #444; background: #222;">
+                        <div style="flex: 1; min-width: 0;">
+                            <strong style="color: white; font-size: 15px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.nome}">${p.nome}</strong> 
+                            <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 5px;">${p.categoria}</span>
+                            ${badgeEsgotado}
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                        <input type="number" id="estoque-${p.idFirebase}" class="input-padrao" style="width: 100%; flex: 1; text-align: center; padding: 10px; font-weight: bold;" placeholder="Infinito" value="${estoqueAtual}">
+                        <button onclick="salvarEstoqueProduto('${p.idFirebase}')" style="background: var(--text-blue); color: black; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Atualizar</button>
+                    </div>
+                </div>
+            `;
+        });
+        
+        // Garante que o filtro se mantém aplicado se a página atualizar em tempo real
+        if(typeof window.filtrarEstoque === 'function') window.filtrarEstoque();
+    }
 });
+
+// FUNÇÃO DE FILTRO POR CATEGORIA (NOVO)
+window.filtrarEstoque = function() {
+    const selectFiltro = document.getElementById('filtro-categoria-estoque');
+    if(!selectFiltro) return;
+    
+    const categoriaSelecionada = selectFiltro.value;
+    const cartoes = document.querySelectorAll('.cartao-estoque-item');
+    
+    cartoes.forEach(cartao => {
+        if (categoriaSelecionada === 'todas') {
+            cartao.style.display = 'flex'; // Volta ao normal
+        } else if (cartao.getAttribute('data-categoria') === categoriaSelecionada) {
+            cartao.style.display = 'flex'; // Mostra se for igual
+        } else {
+            cartao.style.display = 'none'; // Esconde o resto
+        }
+    });
+}
+
+// FUNÇÃO PARA SALVAR O ESTOQUE QUANDO O GESTOR DIGITA
+window.salvarEstoqueProduto = async function(idFirebase) {
+    const inputEstoque = document.getElementById(`estoque-${idFirebase}`).value;
+    let pacote = {};
+    
+    // Se deixar vazio, volta a ser "Infinito"
+    if (inputEstoque === '') {
+        pacote = { estoque: null }; 
+    } else {
+        pacote = { estoque: parseInt(inputEstoque) };
+    }
+
+    try {
+        await updateDoc(doc(db, "produtos", idFirebase), pacote);
+        const btn = document.querySelector(`#estoque-${idFirebase}`).nextElementSibling;
+        const textoOriginal = btn.innerText;
+        btn.innerText = "✅ Salvo";
+        btn.style.background = "var(--text-green)";
+        setTimeout(() => { btn.innerText = textoOriginal; btn.style.background = "var(--text-blue)"; }, 1500);
+    } catch(e) { alert("Erro ao salvar estoque: " + e); }
+}
 
 window.editarProdutoReal = function(docId) {
     const prod = produtosNoBanco.find(p => p.idFirebase === docId);
@@ -532,9 +609,21 @@ window.mudarStatus = async (idDoPedido, novoStatus) => {
                     await updateDoc(doc(db, "configuracoes", "loja"), {
                         estoquePaes: increment(-paesConsumidos)
                     });
-                    // Marca no pedido que os pães já foram cobrados!
-                    pacoteAtualizacao.paesDescontados = true;
                 }
+
+                // --- MÁGICA DO ESTOQUE INDIVIDUAL (BEBIDAS E PORÇÕES) ---
+                for (const item of pedido.itens) {
+                    const produtoOriginal = produtosNoBanco.find(p => p.idProduto === item.idProdutoOriginal || p.nome === item.nome.replace(' (Personalizado)', ''));
+                    // Se este produto tiver controle de estoque ativo (número diferente de nulo), desconta!
+                    if (produtoOriginal && produtoOriginal.idFirebase && produtoOriginal.estoque !== undefined && produtoOriginal.estoque !== null) {
+                        await updateDoc(doc(db, "produtos", produtoOriginal.idFirebase), {
+                            estoque: increment(-item.quantidade)
+                        });
+                    }
+                }
+
+                // Marca no pedido que o estoque global já foi cobrado para não duplicar!
+                pacoteAtualizacao.paesDescontados = true; 
             }
         }
         // ---------------------------------------------
@@ -717,48 +806,141 @@ window.carregarDashboard = async function() {
     const qRelatorio = query(collection(db, "pedidos"), where("status", "==", "Finalizado"));
     const querySnapshot = await getDocs(qRelatorio);
     
+    // Leitura do Filtro de Mês
+    const filtroMes = document.getElementById('filtro-mes-dashboard');
+    let mesSelecionado = filtroMes ? filtroMes.value : "todos";
+    
     let faturamentoTotal = 0;
     let qtdPedidos = 0;
-    let pedidosFinalizadosLista = []; // Array para guardar os pedidos para a tabela
+    let totalProdutosVendidos = 0; // NOVA MÉTRICA DE PRODUÇÃO
+    let pedidosFinalizadosLista = []; 
     
-    let faturamentoPorDia = {};
     let contagemProdutos = {};
+    let faturamentoDiarioPorCategoria = {}; 
+    
+    const categoriasPredefinidas = ['Hamburguers', 'Sanduíches', 'Porções', 'Bebidas', 'Sobremesas', 'Taxa de Entrega', 'Outros'];
+
+    // Conjunto invisível para descobrir quais meses existem de verdade no banco
+    let mesesDisponiveis = new Set();
 
     querySnapshot.forEach((docSnap) => {
         const pedido = docSnap.data();
         pedido.id = docSnap.id; 
+        
+        let dataFormatada = "Desconhecida";
+        let chaveMesAno = "todos"; // Usado para o filtro
+        
+        if(pedido.dataCriacao) {
+            const dataObj = new Date(pedido.dataCriacao);
+            dataFormatada = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth()+1).toString().padStart(2, '0')}`;
+            
+            // Cria formato universal "YYYY-MM" (Ex: 2026-05) para filtrar perfeitamente
+            chaveMesAno = `${dataObj.getFullYear()}-${(dataObj.getMonth()+1).toString().padStart(2, '0')}`;
+            mesesDisponiveis.add(chaveMesAno);
+        }
+
+        // 🛑 FILTRO DE MÊS: Se o pedido não for do mês selecionado, o sistema ignora ele!
+        if (mesSelecionado !== "todos" && chaveMesAno !== mesSelecionado) {
+            return; 
+        }
+
         pedidosFinalizadosLista.push(pedido);
         qtdPedidos++;
 
-        let numValor = parseFloat(pedido.totalGeral.replace('R$','').replace('.','').replace(',','.'));
-        if(!isNaN(numValor)) {
-            faturamentoTotal += numValor;
-            
-            let dataFormatada = "Desconhecida";
-            if(pedido.dataCriacao) {
-                const dataObj = new Date(pedido.dataCriacao);
-                dataFormatada = `${dataObj.getDate().toString().padStart(2, '0')}/${(dataObj.getMonth()+1).toString().padStart(2, '0')}`;
-            }
-            faturamentoPorDia[dataFormatada] = (faturamentoPorDia[dataFormatada] || 0) + numValor;
+        // Cria o dia zerado se não existir
+        if (!faturamentoDiarioPorCategoria[dataFormatada]) {
+            faturamentoDiarioPorCategoria[dataFormatada] = {};
+            categoriasPredefinidas.forEach(c => faturamentoDiarioPorCategoria[dataFormatada][c] = 0);
         }
 
+        let numValorTotal = 0;
+        if(pedido.totalGeral) {
+            numValorTotal = parseFloat(pedido.totalGeral.replace('R$','').replace('.','').replace(',','.'));
+            if(!isNaN(numValorTotal)) faturamentoTotal += numValorTotal;
+        }
+
+        // Desmembra os itens na sua respectiva categoria
+        let somaItens = 0;
         if(pedido.itens && pedido.itens.length > 0) {
             pedido.itens.forEach(item => {
                 const nomeLanche = item.nome.replace(' (Personalizado)', '');
                 contagemProdutos[nomeLanche] = (contagemProdutos[nomeLanche] || 0) + item.quantidade;
+                
+                // ALIMENTA A NOVA MÉTRICA (Soma quantos lanches saíram da chapa)
+                totalProdutosVendidos += item.quantidade; 
+                
+                // Descobre a categoria do item baseando-se no banco
+                const produtoOriginal = produtosNoBanco.find(p => p.idProduto === item.idProdutoOriginal || p.nome === nomeLanche);
+                const cat = (produtoOriginal && produtoOriginal.categoria) ? produtoOriginal.categoria : 'Outros';
+                
+                const subtotalItem = (item.preco * item.quantidade) || 0;
+                if(faturamentoDiarioPorCategoria[dataFormatada][cat] !== undefined) {
+                    faturamentoDiarioPorCategoria[dataFormatada][cat] += subtotalItem;
+                } else {
+                    faturamentoDiarioPorCategoria[dataFormatada]['Outros'] += subtotalItem;
+                }
+                somaItens += subtotalItem;
             });
+        }
+        
+        // Extrai a Taxa de Entrega e extras matematicamente
+        if(numValorTotal > somaItens) {
+            const diffTaxa = numValorTotal - somaItens;
+            faturamentoDiarioPorCategoria[dataFormatada]['Taxa de Entrega'] += diffTaxa;
         }
     });
 
-    // 2. Atualiza os Cards
-    let ticketMedio = qtdPedidos > 0 ? (faturamentoTotal / qtdPedidos) : 0;
+    // --- MÁGICA DO SELECT AUTOMÁTICO ---
+    // Popula a caixa de seleção de meses sozinhos, do mês mais recente para o mais antigo
+    if (filtroMes && filtroMes.options.length <= 1 && mesesDisponiveis.size > 0) {
+        let mesesArray = Array.from(mesesDisponiveis).sort().reverse(); 
+        mesesArray.forEach(mes => {
+            const [ano, mesNum] = mes.split('-');
+            // Transforma "2026-05" em "Maio/2026"
+            const nomeMes = new Date(ano, mesNum - 1, 1).toLocaleDateString('pt-BR', { month: 'long' });
+            const textoOpcao = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1) + '/' + ano;
+            
+            filtroMes.innerHTML += `<option value="${mes}">${textoOpcao}</option>`;
+        });
+        
+        // Na primeira vez que a página carrega, seleciona o mês atual automaticamente
+        if (mesSelecionado === "todos" && mesesArray.length > 0) {
+            filtroMes.value = mesesArray[0];
+            return carregarDashboard(); // Recarrega a função aplicando o filtro do mês atual
+        }
+    }
+
+    // 2. Atualiza os Cards com as novas métricas do mês filtrado
     document.getElementById('dash-faturamento').innerText = faturamentoTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     document.getElementById('dash-pedidos').innerText = qtdPedidos;
-    document.getElementById('dash-ticket').innerText = ticketMedio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    document.getElementById('dash-produtos-vendidos').innerText = totalProdutosVendidos;
 
-    // 3. Gráfico de Linha (Faturamento)
-    const labelsDias = Object.keys(faturamentoPorDia).sort(); 
-    const dadosDias = labelsDias.map(dia => faturamentoPorDia[dia]);
+    // 3. Gráfico de Barras Empilhadas (Faturamento)
+    const labelsDias = Object.keys(faturamentoDiarioPorCategoria).sort(); 
+    
+    // Paleta de Cores Premium
+    const coresCategorias = {
+        'Hamburguers': '#ff7b72',     // Vermelho Vivo
+        'Sanduíches': '#e3b341',      // Laranja Mostarda
+        'Porções': '#f0e68c',         // Amarelo Claro
+        'Bebidas': '#79c0ff',         // Azul Claro
+        'Sobremesas': '#d2a8ff',      // Roxo
+        'Taxa de Entrega': '#56d364', // Verde 
+        'Outros': '#8b949e'           // Cinza
+    };
+
+    const datasetsEmpilhados = categoriasPredefinidas.map(categoria => {
+        return {
+            label: categoria,
+            data: labelsDias.map(dia => faturamentoDiarioPorCategoria[dia][categoria]),
+            backgroundColor: coresCategorias[categoria],
+            borderWidth: 0,
+            borderRadius: 4
+        };
+    });
+
+    // Tira as categorias vazias para não poluir a legenda à toa
+    const datasetsFiltrados = datasetsEmpilhados.filter(dataset => dataset.data.some(valor => valor > 0));
 
     // 4. Gráfico de Rosca (Mais Vendidos)
     const arrayProdutos = Object.keys(contagemProdutos).map(nome => ({ nome, qtd: contagemProdutos[nome] }));
@@ -767,8 +949,8 @@ window.carregarDashboard = async function() {
     const labelsProdutos = top5Produtos.map(p => p.nome);
     const dadosProdutos = top5Produtos.map(p => p.qtd);
 
-    // 5. Preenche a Tabela de Histórico Recente (Últimos 10 pedidos)
-    pedidosFinalizadosLista.sort((a, b) => b.dataCriacao - a.dataCriacao); // Ordena do mais novo pro mais velho
+    // 5. Preenche a Tabela de Histórico Recente
+    pedidosFinalizadosLista.sort((a, b) => b.dataCriacao - a.dataCriacao);
     const ultimos10 = pedidosFinalizadosLista.slice(0, 10);
     const tbody = document.getElementById('tabela-historico');
     tbody.innerHTML = '';
@@ -799,12 +981,35 @@ window.carregarDashboard = async function() {
 
     const ctxReceita = document.getElementById('graficoFaturamento').getContext('2d');
     chartReceita = new Chart(ctxReceita, {
-        type: 'line',
+        type: 'bar', 
         data: {
             labels: labelsDias,
-            datasets: [{ label: 'Faturamento (R$)', data: dadosDias, borderColor: '#56d364', backgroundColor: 'rgba(86, 211, 100, 0.1)', borderWidth: 3, tension: 0.3, fill: true }]
+            datasets: datasetsFiltrados
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#30363d' }, ticks: { color: '#8b949e' } }, x: { grid: { display: false }, ticks: { color: '#8b949e' } } } }
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            // NOVA MÁGICA: O balãozinho agora mostra tudo de uma vez!
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: { 
+                legend: { display: true, position: 'bottom', labels: { color: '#c9d1d9', font: { size: 11 }, usePointStyle: true, boxWidth: 8 } },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y)}`;
+                        }
+                    }
+                }
+            }, 
+            scales: { 
+                // NOVA MÁGICA: Tiramos o "stacked: true" para as barras ficarem lado a lado
+                y: { stacked: false, beginAtZero: true, grid: { color: '#30363d' }, ticks: { color: '#8b949e' } }, 
+                x: { stacked: false, grid: { display: false }, ticks: { color: '#8b949e' } } 
+            } 
+        }
     });
 
     const ctxProdutos = document.getElementById('graficoProdutos').getContext('2d');
