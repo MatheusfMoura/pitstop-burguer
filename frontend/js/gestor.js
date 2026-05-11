@@ -1266,8 +1266,8 @@ window.imprimirComanda = function(id) {
             <style>
                 @page { margin: 0; } 
                 /* O padding-left de 15px empurra o texto para a direita, evitando o corte das letras iniciais */
-                body { margin: 0; padding: 10px 15px 10px 15px; width: 78mm; color: black; font-family: 'Courier New', Courier, monospace; box-sizing: border-box; }
-                .linha-tracejada { border-top: 1px dashed black; margin: 10px 0; }
+                body { margin: 0; padding: 10px 15px 10px 15px; width: 78mm; color: black; font-weight: bold; font-family: 'Courier New', Courier, monospace; box-sizing: border-box; }
+                .linha-tracejada { border-top: 2px dashed black; margin: 10px 0; }
                 .flex-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
             </style>
         </head>
