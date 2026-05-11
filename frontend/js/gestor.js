@@ -1197,8 +1197,15 @@ window.salvarPedidoManual = async function() {
     btn.disabled = true;
 
     try {
-        await addDoc(collection(db, "pedidos"), pacote);
+        // Envia para o banco e captura o ID do pedido gerado na hora
+        const docRef = await addDoc(collection(db, "pedidos"), pacote);
         
+        // 🖨️ MÁGICA DA IMPRESSÃO IMEDIATA
+        // Alimentamos a memória e evitamos que o radar automático duplique a impressão
+        pedidosJaImpressos.add(docRef.id); 
+        dadosCompletosMemoria[docRef.id] = pacote;
+        imprimirComanda(docRef.id); 
+
         // Esvazia tudo para o próximo pedido
         document.getElementById('manual-nome').value = '';
         document.getElementById('manual-whats').value = '';
@@ -1208,7 +1215,9 @@ window.salvarPedidoManual = async function() {
         carrinhoPDV = [];
         atualizarListaPDV();
         
+        // Força o redirecionamento para o Painel Principal de Pedidos
         mudarTela('pedidos');
+        
     } catch (e) {
         alert("Erro ao lançar pedido: " + e);
     } finally {
