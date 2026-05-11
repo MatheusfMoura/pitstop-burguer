@@ -1247,9 +1247,15 @@ window.imprimirComanda = function(id) {
         });
     }
 
-    // Desenha o Recibo HTML
+    // Desenha o Recibo HTML COM TRAVA DE MARGEM PARA BOBINA 80MM
     const recibo = `
-        <div style="padding: 10px; width: 100%; box-sizing: border-box;">
+        <style>
+            @media print {
+                @page { margin: 0; } /* Zera a margem do Windows */
+                body { margin: 0; padding: 0; width: 76mm !important; } /* Trava a largura exata da impressora */
+            }
+        </style>
+        <div style="padding: 4px; width: 100%; box-sizing: border-box; color: black; font-family: sans-serif;">
             <h2 style="text-align: center; margin: 0 0 5px 0; font-size: 18px; text-transform: uppercase;">PITSTOP BURGUER</h2>
             <div style="text-align: center; font-size: 12px;">Pedido: #${id.substring(0,6).toUpperCase()}</div>
             <div style="text-align: center; font-size: 12px; margin-bottom: 10px;">${dataFormatada}</div>
