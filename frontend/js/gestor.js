@@ -1247,15 +1247,16 @@ window.imprimirComanda = function(id) {
         });
     }
 
-    // Desenha o Recibo HTML COM TRAVA DE MARGEM PARA BOBINA 80MM
-    const recibo = `
-        <style>
-            @media print {
+    // Desenha o Recibo HTML ISOLADO (O Segredo para não travar o site)
+    const reciboHTML = `
+        <html>
+        <head>
+            <style>
                 @page { margin: 0; } /* Zera a margem do Windows */
-                body { margin: 0; padding: 0; width: 76mm !important; } /* Trava a largura exata da impressora */
-            }
-        </style>
-        <div style="padding: 4px; width: 100%; box-sizing: border-box; color: black; font-family: sans-serif;">
+                body { margin: 0; padding: 4px; width: 76mm; color: black; font-family: sans-serif; box-sizing: border-box; }
+            </style>
+        </head>
+        <body>
             <h2 style="text-align: center; margin: 0 0 5px 0; font-size: 18px; text-transform: uppercase;">PITSTOP BURGUER</h2>
             <div style="text-align: center; font-size: 12px;">Pedido: #${id.substring(0,6).toUpperCase()}</div>
             <div style="text-align: center; font-size: 12px; margin-bottom: 10px;">${dataFormatada}</div>
@@ -1281,19 +1282,34 @@ window.imprimirComanda = function(id) {
             
             <div style="text-align: center; margin-top: 20px; font-size: 11px;">Obrigado pela preferência!</div>
             
-            <!-- Espaço para o corte do papel -->
             <br><br><br><br>
-        </div>
+        </body>
+        </html>
     `;
 
-    // Joga o desenho na área invisível e manda imprimir
-    const area = document.getElementById('area-impressao');
-    area.innerHTML = recibo;
-    area.style.display = 'block'; // Mostra temporariamente para o navegador ver
-    
-    window.print();
-    
-    area.style.display = 'none'; // Esconde de novo
+    // Cria uma impressora invisível (Iframe) para não travar a tela do painel
+    let iframe = document.getElementById('iframe-impressora');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'iframe-impressora';
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0px';
+        iframe.style.height = '0px';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+    }
+
+    // Escreve o recibo dentro desse arquivo invisível
+    const docIframe = iframe.contentWindow.document;
+    docIframe.open();
+    docIframe.write(reciboHTML);
+    docIframe.close();
+
+    // Aguarda apenas 100 milissegundos para o HTML ser renderizado invisivelmente e imprime rápido!
+    setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+    }, 100);
 }
 
 // ==========================================
