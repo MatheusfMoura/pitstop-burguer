@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, setDoc, getDocs, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, setDoc, getDocs, where, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
@@ -507,8 +507,48 @@ window.fecharGaveta = function() {
     setTimeout(() => { document.getElementById('drawerOverlay').style.display = 'none'; }, 300);
 }
 
-window.mudarStatus = async (idDoPedido, novoStatus) => { try { await updateDoc(doc(db, "pedidos", idDoPedido), { status: novoStatus }); } catch (erro) { alert("Erro: " + erro); } };
-window.mudarStatusFechando = async function(id, status) { await window.mudarStatus(id, status); fecharGaveta(); }
+window.mudarStatus = async (idDoPedido, novoStatus) => { 
+    try { 
+        let pacoteAtualizacao = { status: novoStatus };
+
+        // --- MÁGICA DO ESTOQUE DE PÃES AUTOMÁTICO ---
+        if (novoStatus === 'Pronto') {
+            const pedido = dadosCompletosMemoria[idDoPedido];
+            
+            // Garante que só desconta 1 vez por pedido (proteção contra cliques duplos)
+            if (pedido && !pedido.paesDescontados && pedido.itens) {
+                let paesConsumidos = 0;
+                
+                pedido.itens.forEach(item => {
+                    // Procura o item no banco de dados para confirmar se ele pertence à categoria que usa pão
+                    const produtoOriginal = produtosNoBanco.find(p => p.idProduto === item.idProdutoOriginal || p.nome === item.nome.replace(' (Personalizado)', ''));
+                    if (produtoOriginal && (produtoOriginal.categoria === 'Hamburguers' || produtoOriginal.categoria === 'Sanduíches')) {
+                        paesConsumidos += item.quantidade;
+                    }
+                });
+
+                if (paesConsumidos > 0) {
+                    // Desconta do estoque global usando a matemática segura do Firebase (increment negativo)
+                    await updateDoc(doc(db, "configuracoes", "loja"), {
+                        estoquePaes: increment(-paesConsumidos)
+                    });
+                    // Marca no pedido que os pães já foram cobrados!
+                    pacoteAtualizacao.paesDescontados = true;
+                }
+            }
+        }
+        // ---------------------------------------------
+
+        await updateDoc(doc(db, "pedidos", idDoPedido), pacoteAtualizacao); 
+    } catch (erro) { 
+        alert("Erro ao mudar status: " + erro); 
+    } 
+};
+
+window.mudarStatusFechando = async function(id, status) { 
+    await window.mudarStatus(id, status); 
+    fecharGaveta(); 
+}
 
 // FUNÇÃO PARA DESPACHAR COM O MOTOBOY SELECIONADO
 window.despacharComMotoboy = async function(id) {
