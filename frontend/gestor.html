@@ -48,10 +48,6 @@
         <div class="menu-item" id="btn-menu-relatorios" onclick="mudarTela('relatorios')" title="Dashboard e Relatórios">
             <span class="material-symbols-outlined" style="font-size: 26px;">bar_chart</span>
         </div>
-        <div class="menu-item" id="btn-menu-novo-pedido" onclick="mudarTela('novo-pedido')" title="Lançar Pedido Manual">
-            <span class="material-symbols-outlined" style="font-size: 26px;">edit_square</span>
-        </div>
-        
         <div class="menu-item" onclick="sairGestor()" title="Sair do Sistema" style="margin-top: auto; color: var(--text-red);">
             <span class="material-symbols-outlined" style="font-size: 26px;">logout</span>
         </div>
@@ -67,7 +63,7 @@
                         <button id="btn-status-loja" class="status-loja loja-aberta" onclick="toggleLoja()">CARREGANDO...</button>
                         <p id="data-hoje" style="margin-top: 5px; font-size: 12px; color: var(--text-muted);"></p>
                     </div>
-                    <button onclick="abrirModalManual()" style="background: var(--soft-blue); color: var(--text-blue); border: 1px solid rgba(56, 139, 253, 0.4); padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <button onclick="abrirModalManual()" class="btn-header-action">
                         <span class="material-symbols-outlined">add_circle</span> Fazer Pedido Manual
                     </button>
                 </div>
@@ -119,13 +115,13 @@
         </div>
 
         <div id="tela-cardapio" class="tela">
-            <header style="border-bottom: none; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
-                <div class="header-title">
-                    <h1>Gestão de Cardápio</h1>
-                    <p>Adicione lanches, fotos e ingredientes para o site do cliente.</p>
+            <header style="padding: 15px 30px 0 30px; border-bottom: none; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <div class="header-title" style="display: flex; align-items: baseline; gap: 15px;">
+                    <h1 style="font-size: 20px; margin: 0;">Gestão de Cardápio</h1>
+                    <p style="font-size: 13px; margin: 0; color: var(--text-muted);">Adicione lanches e ingredientes para o site.</p>
                 </div>
-                <button onclick="compartilharCardapio()" class="btn-salvar-lanche" style="width: auto; padding: 10px 20px; background: var(--accent-color); border-color: var(--accent-color); color: white; display: flex; align-items: center; gap: 8px; font-size: 14px;">
-                    🔗 Compartilhar Cardápio
+                <button onclick="compartilharCardapio()" class="btn-header-action" style="padding: 8px 16px; font-size: 13px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">share</span> Compartilhar
                 </button>
             </header>
 
@@ -133,7 +129,7 @@
                 
                 <div class="painel-form">
                     <div class="painel-header">
-                        <h3 id="titulo-form-lanche" style="color: white; font-size: 16px;">✨ Novo Lanche</h3>
+                        <h3 id="titulo-form-lanche" style="color: var(--text-main); font-size: 15px; margin: 0; letter-spacing: 0.5px;">✨ Novo Lanche</h3>
                     </div>
                     <div class="painel-body">
                         <div class="input-group">
@@ -205,8 +201,8 @@
 
                 <div class="painel-lista">
                     <div class="painel-header" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="color: white; font-size: 16px;">🍔 Cardápio Ativo no Site</h3>
-                        <span id="contador-lanches" style="background: var(--bg-main); padding: 4px 10px; border-radius: 12px; font-size: 12px; border: 1px solid var(--border-color);">0 itens</span>
+                        <h3 style="color: var(--text-main); font-size: 15px; margin: 0; letter-spacing: 0.5px;">🍔 Cardápio Ativo no Site</h3>
+                        <span id="contador-lanches" style="background: rgba(0,0,0,0.4); padding: 4px 12px; border-radius: 12px; font-size: 11px; border: 1px solid rgba(255,255,255,0.05); color: var(--text-muted); box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);">0 itens</span>
                     </div>
                     <div class="grid-produtos" id="grid-cardapio-real"></div>
                 </div>
@@ -401,106 +397,6 @@
             </div>
         </div>
 
-        <div id="tela-novo-pedido" class="tela">
-            <header style="border-bottom: 1px solid var(--border-color);">
-                <div class="header-title">
-                    <h1>Caixa / Lançamento Manual</h1>
-                    <p>Adicione pedidos rápidos recebidos por telefone ou balcão.</p>
-                </div>
-            </header>
-
-            <div class="cardapio-container" style="display: flex; gap: 30px; align-items: flex-start; flex-wrap: wrap; justify-content: flex-start;">
-                
-                <div class="painel-form" style="flex: 1; min-width: 320px; max-width: 600px;">
-                    <div class="painel-header">
-                        <h3 style="color: white; font-size: 16px;">👤 Dados do Cliente</h3>
-                    </div>
-                    <div class="painel-body">
-                        <div style="display: flex; gap: 10px;">
-                            <div class="input-group" style="flex: 2;">
-                                <label>Nome do Cliente</label>
-                                <input type="text" id="manual-nome" class="input-padrao" placeholder="Ex: Maria (WhatsApp)">
-                            </div>
-                            <div class="input-group" style="flex: 1;">
-                                <label>Telefone</label>
-                                <input type="text" id="manual-whats" class="input-padrao" placeholder="Opcional">
-                            </div>
-                        </div>
-
-                        <div style="display: flex; gap: 10px;">
-                            <div class="input-group" style="flex: 1;">
-                                <label>Tipo de Pedido</label>
-                                <select id="manual-tipo" class="input-padrao" onchange="document.getElementById('div-manual-end').style.display = this.value === 'entrega' ? 'block' : 'none'">
-                                    <option value="entrega">Delivery</option>
-                                    <option value="retirada">Retirar no Balcão</option>
-                                    <option value="local">Comer no Local</option>
-                                </select>
-                            </div>
-                            <div class="input-group" style="flex: 1;">
-                                <label>Pagamento</label>
-                                <select id="manual-pag" class="input-padrao">
-                                    <option value="dinheiro/cartao">Dinheiro/Cartão (Local)</option>
-                                    <option value="pix-ja-pago">Pix (Já Recebido)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="input-group" id="div-manual-end">
-                            <label>Endereço Completo</label>
-                            <input type="text" id="manual-end" class="input-padrao" placeholder="Ex: Rua A, 123 - Bairro Centro">
-                        </div>
-
-                        <div class="input-group">
-                            <label>Observações Gerais do Pedido</label>
-                            <input type="text" id="manual-obs" class="input-padrao" placeholder="Ex: Tirar cebola, troco para 50...">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="painel-form" style="flex: 1; min-width: 350px; max-width: 600px; border-color: rgba(255, 152, 0, 0.4);">
-                    <div class="painel-header" style="background: rgba(255, 152, 0, 0.1);">
-                        <h3 style="color: var(--text-orange); font-size: 16px;">🛒 Comanda</h3>
-                    </div>
-                    
-                    <div class="painel-body" style="padding-bottom: 10px;">
-                        <div style="background: var(--bg-main); border: 1px solid var(--border-color); padding: 15px; border-radius: 8px; height: 100%; display: flex; flex-direction: column;">
-                            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 8px; text-transform: uppercase;">Adicionar Lanches do Cardápio</label>
-                            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                                <select id="pdv-produto" class="input-padrao" style="flex: 2;">
-                                    <option value="">Carregando cardápio...</option>
-                                </select>
-                                <input type="number" id="pdv-qtd" class="input-padrao" value="1" min="1" style="flex: 0.5; text-align: center; padding: 10px 5px;">
-                                <button onclick="adicionarItemPDV()" style="background: var(--text-blue); color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; padding: 0 15px;">➕ Add</button>
-                            </div>
-                            
-                            <div id="pdv-lista-itens" style="display: flex; flex-direction: column; gap: 8px; padding-right: 5px;">
-                                <span style="color: #666; font-size: 13px; font-style: italic;">Nenhum item adicionado à comanda.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="painel-footer">
-                        <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
-                            <div class="input-group" style="flex: 1; margin-bottom: 0;">
-                                <label>Taxa de Entrega (R$)</label>
-                                <input type="number" id="manual-taxa" class="input-padrao" value="0.00" step="1.00" oninput="calcularTotalPDV()">
-                            </div>
-                            <div class="input-group" style="flex: 1; margin-bottom: 0;">
-                                <label>Total a Cobrar (R$)</label>
-                                <input type="text" id="manual-total" class="input-padrao" value="R$ 0,00" readonly style="background: rgba(0,0,0,0.3); color: var(--text-green); font-weight: bold; font-size: 18px; border-color: var(--text-green);">
-                            </div>
-                        </div>
-                        <button onclick="salvarPedidoManual()" class="btn-salvar-lanche" style="margin-top: 0;">✅ Enviar para a Cozinha</button>
-                    </div>
-                </div>
-
-                        <button onclick="salvarPedidoManual()" class="btn-salvar-lanche" style="margin-top: 20px;">✅ Enviar para a Cozinha</button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
     </div> <div class="drawer-overlay" id="drawerOverlay" onclick="fecharGaveta()"></div>
     <div class="drawer" id="drawerPanel">
         <div class="drawer-header">
@@ -551,11 +447,12 @@
                 <button class="btn-fechar-modal" onclick="fecharModalManual()">&times;</button>
             </div>
             
-            <div class="cardapio-container" style="display: flex; gap: 20px; align-items: flex-start; padding: 20px; overflow-y: auto;">
-                <div class="painel-form" style="flex: 1; min-width: 300px;">
-                    <div class="painel-header"><h3>👤 Cliente</h3></div>
-                    <div class="painel-body">
-                        <div class="input-group"><label>Nome</label><input type="text" id="manual-nome" class="input-padrao"></div>
+            <div class="cardapio-container" style="display: flex; gap: 25px; align-items: stretch; padding: 20px; flex: 1;">
+                
+                <div class="painel-form" style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                    <div class="painel-header"><h3 style="color: white; font-size: 16px; margin: 0;">👤 Dados do Cliente</h3></div>
+                    <div class="painel-body" style="flex: 1;">
+                        <div class="input-group"><label>Nome</label><input type="text" id="manual-nome" class="input-padrao" placeholder="Ex: João (Balcão)"></div>
                         <div style="display: flex; gap: 10px;">
                             <div class="input-group" style="flex:1;"><label>Tipo</label>
                                 <select id="manual-tipo" class="input-padrao" onchange="document.getElementById('div-manual-end-modal').style.display = this.value === 'entrega' ? 'block' : 'none'">
@@ -571,27 +468,43 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="input-group" id="div-manual-end-modal" style="display: none;"><label>Endereço</label><input type="text" id="manual-end" class="input-padrao"></div>
-                        <div class="input-group"><label>Observações</label><input type="text" id="manual-obs" class="input-padrao"></div>
+                        <div class="input-group" id="div-manual-end-modal" style="display: none;"><label>Endereço</label><input type="text" id="manual-end" class="input-padrao" placeholder="Rua, Número, Bairro"></div>
+                        <div class="input-group"><label>Observações</label><input type="text" id="manual-obs" class="input-padrao" placeholder="Ex: Troco para 50..."></div>
                     </div>
                 </div>
 
-                <div class="painel-form" style="flex: 1.2; border-color: rgba(255, 152, 0, 0.4);">
-                    <div class="painel-header" style="background: rgba(255, 152, 0, 0.1);"><h3>🛒 Comanda</h3></div>
-                    <div class="painel-body">
-                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                            <select id="pdv-produto" class="input-padrao" style="flex: 2;"><option value="">Carregando...</option></select>
-                            <input type="number" id="pdv-qtd" class="input-padrao" value="1" min="1" style="flex: 0.5; text-align: center;">
-                            <button onclick="adicionarItemPDV()" style="background: var(--text-blue); color: black; border: none; border-radius: 6px; font-weight: bold; padding: 0 15px;">Add</button>
+                <div class="painel-form" id="painel-comanda-premium" style="flex: 1.6; display: flex; flex-direction: column;">
+                    <div class="painel-header"><h3 style="color: var(--text-orange); font-size: 16px; margin: 0;">🛒 Comanda</h3></div>
+                    <div class="painel-body" style="display: flex; flex-direction: column; gap: 15px; flex: 1;">
+                        
+                        <div style="display: flex; gap: 10px; position: relative; z-index: 1000;">
+                            <div class="custom-select-wrapper" id="pdv-custom-select">
+                                <input type="hidden" id="pdv-produto-hidden" value="">
+                                <div class="custom-select-trigger" onclick="toggleCustomSelect()">
+                                    <span id="pdv-select-text">Buscar lanche...</span>
+                                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--text-muted);">search</span>
+                                </div>
+                                <div class="custom-select-panel" id="pdv-select-panel">
+                                    <div class="custom-select-search">
+                                        <input type="text" id="pdv-search-input" placeholder="🔍 Digite para buscar..." oninput="filtrarCustomSelect()" onclick="event.stopPropagation()">
+                                    </div>
+                                    <div class="custom-select-options" id="pdv-options-list"></div>
+                                </div>
+                            </div>
+                            <input type="number" id="pdv-qtd" class="input-padrao" value="1" min="1" style="width: 60px; text-align: center;">
+                            <button onclick="adicionarItemPDV()" style="background: var(--text-blue); color: black; border: none; border-radius: 6px; font-weight: bold; padding: 0 15px; cursor: pointer; transition: 0.2s;">Add</button>
                         </div>
-                        <div id="pdv-lista-itens" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                        
+                        <div id="pdv-lista-itens" style="display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 250px; overflow-y: auto; padding-right: 5px;">
+                             </div>
                     </div>
+                    
                     <div class="painel-footer">
                         <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
                             <div class="input-group" style="flex: 1; margin-bottom: 0;"><label>Taxa (R$)</label><input type="number" id="manual-taxa" class="input-padrao" value="0.00" oninput="calcularTotalPDV()"></div>
-                            <div class="input-group" style="flex: 1; margin-bottom: 0;"><label>Total</label><input type="text" id="manual-total" class="input-padrao" readonly style="color: var(--text-green); font-weight: bold;"></div>
+                            <div class="input-group" style="flex: 1; margin-bottom: 0;"><label>Total</label><input type="text" id="manual-total" class="input-padrao" readonly style="background: rgba(0,0,0,0.4); color: var(--text-green); font-weight: bold; font-size: 18px; border: 1px solid rgba(86, 211, 100, 0.2);"></div>
                         </div>
-                        <button onclick="salvarPedidoManual()" class="btn-salvar-lanche">✅ Enviar para a Cozinha</button>
+                        <button onclick="salvarPedidoManual()" class="btn-salvar-lanche" style="font-size: 16px;">✅ Enviar para a Cozinha</button>
                     </div>
                 </div>
             </div>

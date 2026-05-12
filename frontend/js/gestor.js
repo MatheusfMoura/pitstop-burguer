@@ -18,6 +18,16 @@ const storage = getStorage(app);
 const auth = getAuth(app);
 
 // ==========================================
+// 🧹 FAXINA DE IDs (RESOLVE O CONFLITO DO MODAL)
+// Como agora usamos o modal na tela principal, apagamos os IDs 
+// da tela antiga escondida para o sistema não se confundir!
+// ==========================================
+const telaAntiga = document.getElementById('tela-novo-pedido');
+if (telaAntiga) {
+    telaAntiga.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+}
+
+// ==========================================
 // SISTEMA DE LOGIN CRIPTOGRAFADO (FIREBASE)
 // ==========================================
 
@@ -115,27 +125,38 @@ onSnapshot(qProdutos, (snapshot) => {
         if(descText.length > 65) descText = descText.substring(0, 65) + '...';
 
         grid.innerHTML += `
-            <div class="card-produto-real" style="cursor: pointer; transition: 0.2s;" onclick="editarProdutoReal('${docId}')" onmouseover="this.style.borderColor='var(--text-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
+            <div class="card-produto-real" onclick="editarProdutoReal('${docId}')">
                 <img src="${fotoUrl}" class="img-produto" alt="Foto Lanche">
                 <div class="conteudo-produto">
                     <div>
                         <div class="titulo-produto">${prod.nome}</div>
-                        <span style="color: var(--text-green); font-weight: bold; margin-bottom: 8px; display: block;">R$ ${prod.preco.toFixed(2).replace('.',',')}</span>
-                        <div class="desc-produto">${descText}</div>
+                        <span style="color: var(--text-green); font-weight: bold; margin-bottom: 8px; display: block; font-size: 17px;">R$ ${prod.preco.toFixed(2).replace('.',',')}</span>
+                        <div class="desc-produto" title="${descText}">${descText}</div>
                     </div>
-                    <button onclick="excluirProdutoReal(event, '${docId}')" style="background: var(--soft-red); color: var(--text-red); border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; z-index: 10;">🗑️ Remover do Site</button>
+                    <button onclick="excluirProdutoReal(event, '${docId}')" style="background: rgba(248, 81, 73, 0.1); color: var(--text-red); border: 1px solid rgba(248, 81, 73, 0.3); padding: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s;" onmouseover="this.style.background='var(--text-red)'; this.style.color='black';" onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='var(--text-red)';">🗑️ Remover Lanche</button>
                 </div>
             </div>
         `;
     });
     document.getElementById('contador-lanches').innerText = `${contador} itens`;
 
-    // --- ALIMENTA O SELECT DO MINI PDV AUTOMATICAMENTE ---
-    const selectPDV = document.getElementById('pdv-produto');
-    if(selectPDV) {
-        selectPDV.innerHTML = '<option value="">Selecione um produto...</option>';
+    // --- ALIMENTA O SELECT CUSTOMIZADO DO MINI PDV (COM FOTOS PREMIUM) ---
+    const listPDV = document.getElementById('pdv-options-list');
+    if(listPDV) {
+        listPDV.innerHTML = '';
         produtosNoBanco.forEach(p => {
-            selectPDV.innerHTML += `<option value="${p.idFirebase}">${p.nome} - R$ ${p.preco.toFixed(2).replace('.',',')}</option>`;
+            // Traz a foto oficial do lanche
+            const fotoUrl = (p.imagem && p.imagem.startsWith('http')) ? p.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+            
+            listPDV.innerHTML += `
+                <div class="custom-option" data-id="${p.idFirebase}" data-nome="${p.nome.toLowerCase()}" onclick="selecionarProdutoPDV('${p.idFirebase}', '${p.nome}')">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="${fotoUrl}" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
+                        <span class="opt-nome" style="font-size: 15px; font-weight: 600;">${p.nome}</span>
+                    </div>
+                    <span class="opt-preco" style="font-size: 14px;">R$ ${p.preco.toFixed(2).replace('.',',')}</span>
+                </div>
+            `;
         });
     }
 
@@ -1134,7 +1155,8 @@ window.toggleEntregaGratis = async function() {
 window.carrinhoPDV = [];
 
 window.adicionarItemPDV = function() {
-    const idFirebase = document.getElementById('pdv-produto').value;
+    // Agora lê do nosso campo oculto
+    const idFirebase = document.getElementById('pdv-produto-hidden').value;
     const qtd = parseInt(document.getElementById('pdv-qtd').value);
     
     if(!idFirebase || isNaN(qtd) || qtd < 1) return alert("Selecione um produto na lista e digite a quantidade!");
@@ -1150,8 +1172,16 @@ window.adicionarItemPDV = function() {
         listaAdicionais: [] 
     });
     
-    // Reseta a quantidade
+    // Reseta visualmente o novo campo customizado e a quantidade
     document.getElementById('pdv-qtd').value = 1;
+    document.getElementById('pdv-produto-hidden').value = '';
+    const spanText = document.getElementById('pdv-select-text');
+    if(spanText) {
+        spanText.innerText = 'Selecione um lanche...';
+        spanText.style.color = "var(--text-muted)";
+    }
+    document.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+    
     atualizarListaPDV();
 }
 
@@ -1162,26 +1192,34 @@ window.removerItemPDV = function(index) {
 
 window.atualizarListaPDV = function() {
     const lista = document.getElementById('pdv-lista-itens');
+    if(!lista) return;
     lista.innerHTML = '';
     
     if(carrinhoPDV.length === 0) {
-        lista.innerHTML = '<span style="color: #666; font-size: 13px; font-style: italic;">Nenhum item adicionado à comanda.</span>';
+        lista.innerHTML = '<span style="color: #666; font-size: 13px; font-style: italic; padding: 10px;">Nenhum item na comanda.</span>';
         calcularTotalPDV();
         return;
     }
 
     carrinhoPDV.forEach((item, index) => {
-        const subtotalItem = item.preco * item.quantidade;
+        const precoFormatado = typeof item.preco === 'number' ? item.preco.toFixed(2).replace('.', ',') : '0,00';
+        
         lista.innerHTML += `
-            <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 10px; border-radius: 6px; border: 1px solid #444; font-size: 14px; color: white;">
-                <span><strong style="color: var(--text-orange); margin-right: 5px;">${item.quantidade}x</strong> ${item.nome}</span>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <span style="color: var(--text-green); font-weight: bold;">R$ ${subtotalItem.toFixed(2).replace('.', ',')}</span>
-                    <button onclick="removerItemPDV(${index})" style="background: var(--soft-red); border: none; border-radius: 4px; padding: 4px 8px; color: var(--text-red); cursor: pointer; font-size: 14px;">🗑️</button>
+            <div class="pdv-item">
+                <div class="pdv-item-info">
+                    <div class="pdv-item-qtd">${item.quantidade}x</div>
+                    <div class="pdv-item-txt">
+                        <strong>${item.nome.replace(' (Personalizado)', '')}</strong>
+                        <span>R$ ${precoFormatado} cada</span>
+                    </div>
                 </div>
+                <button class="btn-remover-pdv" onclick="removerItemPDV(${index})" title="Remover item">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                </button>
             </div>
         `;
     });
+    
     calcularTotalPDV();
 }
 
@@ -1552,3 +1590,49 @@ window.salvarPedidoManual = async function() {
     await originalSalvarPedidoManual();
     window.fecharModalManual();
 }
+
+// ==========================================
+// 🔍 LÓGICA DO SELECT CUSTOMIZADO PREMIUM
+// ==========================================
+window.toggleCustomSelect = function() {
+    const panel = document.getElementById('pdv-select-panel');
+    panel.classList.toggle('open');
+    if(panel.classList.contains('open')) {
+        document.getElementById('pdv-search-input').focus();
+    }
+}
+
+window.selecionarProdutoPDV = function(idFirebase, nomeLanche) {
+    document.getElementById('pdv-produto-hidden').value = idFirebase;
+    document.getElementById('pdv-select-text').innerText = nomeLanche;
+    document.getElementById('pdv-select-text').style.color = "white";
+    document.getElementById('pdv-select-panel').classList.remove('open');
+    
+    // Remove a classe 'selected' de todos e adiciona no clicado
+    document.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+    const opcaoClicada = document.querySelector(`.custom-option[data-id="${idFirebase}"]`);
+    if(opcaoClicada) opcaoClicada.classList.add('selected');
+}
+
+window.filtrarCustomSelect = function() {
+    const termo = document.getElementById('pdv-search-input').value.toLowerCase().trim();
+    const opcoes = document.querySelectorAll('.custom-option');
+    
+    opcoes.forEach(opt => {
+        const nome = opt.getAttribute('data-nome');
+        if(nome.includes(termo)) {
+            opt.style.display = 'flex';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+}
+
+// Fecha o select se clicar fora dele para não atrapalhar a tela
+document.addEventListener('click', function(event) {
+    const selectWrapper = document.getElementById('pdv-custom-select');
+    if (selectWrapper && !selectWrapper.contains(event.target)) {
+        const panel = document.getElementById('pdv-select-panel');
+        if(panel) panel.classList.remove('open');
+    }
+});
