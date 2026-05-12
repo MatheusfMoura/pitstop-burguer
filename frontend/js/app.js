@@ -697,36 +697,6 @@ window.salvarEdicaoCarrinho = function(index) {
     let precoBase = produtoSelecionado.preco; 
     let precoAdicionais = 0;
 
-    const radioOpcao = document.querySelector('input[name="opcao-base"]:checked');
-    if(radioOpcao) {
-        precoBase = parseFloat(radioOpcao.value);
-        adicionaisEscolhidos.push("Tamanho: " + radioOpcao.getAttribute('data-nome'));
-    }
-
-    const checkboxes = document.querySelectorAll('#lista-adicionais input[type="checkbox"]:checked');
-    checkboxes.forEach(cb => {
-        adicionaisEscolhidos.push(cb.getAttribute('data-nome'));
-        precoAdicionais += parseFloat(cb.getAttribute('data-preco'));
-    });
-
-    const obsDoCliente = document.getElementById('prod-obs').value.trim();
-    const precoFinalItem = precoBase + precoAdicionais; 
-
-    carrinho[index].nome = produtoSelecionado.nome + (adicionaisEscolhidos.length > 0 ? " (Personalizado)" : "");
-    carrinho[index].preco = precoFinalItem;
-    carrinho[index].obs = obsDoCliente;
-    carrinho[index].listaAdicionais = adicionaisEscolhidos;
-
-    atualizarTelaCarrinho();
-    fecharModalProduto();
-    setTimeout(() => abrirCarrinho(), 350); 
-}
-
-window.salvarEdicaoCarrinho = function(index) {
-    const adicionaisEscolhidos = [];
-    let precoBase = produtoSelecionado.preco; 
-    let precoAdicionais = 0;
-
     // Recalcula o tamanho
     const radioOpcao = document.querySelector('input[name="opcao-base"]:checked');
     if(radioOpcao) {

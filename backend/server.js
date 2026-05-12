@@ -49,16 +49,6 @@ app.post('/api/pedidos', async (req, res) => {
             console.log(`🍞 Descontando ${paesConsumidos} pães do estoque...`);
         }
 
-        // Se o pedido consumiu algum pão, manda o Firebase subtrair de forma segura
-        if (paesConsumidos > 0) {
-            const configRef = db.collection('configuracoes').doc('loja');
-            // O 'increment(-X)' subtrai o valor sem precisar ler o banco de dados antes!
-            await configRef.update({
-                estoquePaes: admin.firestore.FieldValue.increment(-paesConsumidos)
-            });
-            console.log(`🍞 Descontando ${paesConsumidos} pães do estoque...`);
-        }
-
         // Carimba a data exata e o status
         pacoteDeDados.dataCriacao = admin.firestore.FieldValue.serverTimestamp();
         pacoteDeDados.status = 'Pendente';
