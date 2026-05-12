@@ -445,7 +445,7 @@ window.abrirGaveta = function(id) {
         dataPedidoFormatada = d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     }
 
-    document.getElementById('drawer-id').innerText = `#${id.substring(0,6).toUpperCase()} • ⏰ ${dataPedidoFormatada}`;
+    document.getElementById('drawer-id').innerText = `Nº ${pedido.numeroDiario.toString().padStart(3, '0')} • ⏰ ${dataPedidoFormatada}`;
 
     // --- LÓGICA DO WHATSAPP COM RESUMO DO PEDIDO ---
     const whatsAppLimpo = pedido.whatsapp ? pedido.whatsapp.replace(/\D/g, '') : '';
@@ -672,12 +672,18 @@ onSnapshot(qPedidos, (snapshot) => {
     window.pedidosFinalizadosIds = []; dadosCompletosMemoria = {};
     let contagens = { pendente: 0, preparo: 0, pronto: 0, entrega: 0, finalizado: 0 };
     let totalReceitaCalculada = 0; let totalPedidosCalculados = 0;
+    
+    // NOVO: Liga o contador que vai zerar a cada novo turno!
+    let contadorDiario = 1; 
 
     snapshot.forEach((documento) => {
         const pedido = documento.data(); const id = documento.id;
         
         // 🚨 FILTRO DE TURNO: Se o pedido foi feito antes do caixa abrir, ignora e pula pro próximo!
         if (pedido.dataCriacao < timestampAberturaCaixa) return; 
+        
+        // Carimba no pedido o número exato dele no dia e soma +1 para o próximo
+        pedido.numeroDiario = contadorDiario++; 
 
         // ==========================================
         // 🖨️ GATILHO: SE CHEGOU PEDIDO NOVO, IMPRIME!
@@ -718,7 +724,7 @@ onSnapshot(qPedidos, (snapshot) => {
             <div class="card-client" style="font-size: 16px; margin-bottom: 8px;">${pedido.cliente || 'Sem Nome'}</div>
             ${resumoItens}
             <div class="card-info" style="border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: auto;">
-                <span class="card-id">#${id.substring(0,5).toUpperCase()}</span>
+                <span class="card-id" style="font-weight: bold; font-size: 15px; color: var(--text-orange);">#${pedido.numeroDiario.toString().padStart(3, '0')}</span>
                 <strong style="color: white; font-size: 15px;">${pedido.totalGeral}</strong>
             </div>
         `;
@@ -1282,15 +1288,8 @@ window.imprimirComanda = function(id) {
         </head>
         <body>
             <h2 style="text-align: center; margin: 0 0 5px 0; font-size: 18px; text-transform: uppercase;">PITSTOP BURGUER</h2>
-            <div style="text-align: center; font-size: 12px; margin-bottom: 2px;">Pedido: #${id.substring(0,6).toUpperCase()}</div>
-            <div style="text-align: center; font-size: 12px; margin-bottom: 10px;">${dataFormatada}</div>
-            
-            <div class="linha-tracejada"></div>
-            
-            <div style="font-size: 14px; margin-bottom: 4px;"><b>Cliente:</b> ${pedido.cliente}</div>
-            <div style="font-size: 14px; margin-bottom: 4px;"><b>Tipo:</b> ${pedido.tipo.toUpperCase()}</div>
-            ${pedido.tipo === 'entrega' ? `<div style="font-size: 14px; margin-bottom: 4px;"><b>Endereço:</b> ${pedido.endereco}</div>` : ''}
-            <div style="font-size: 14px; margin-bottom: 10px;"><b>Pgto:</b> ${pagamentoTexto}</div>
+            <div style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 2px; padding: 4px; border: 2px solid black;">PEDIDO #${pedido.numeroDiario.toString().padStart(3, '0')}</div>
+            <div style="text-align: center; font-size: 12px; margin-bottom: 10px; margin-top: 5px;">${dataFormatada}</div>
             
             <div class="linha-tracejada"></div>
             <div style="font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px;">ITENS DO PEDIDO</div>
@@ -1298,6 +1297,13 @@ window.imprimirComanda = function(id) {
             <div style="margin-bottom: 10px;">
                 ${itensHtml}
             </div>
+            
+            <div class="linha-tracejada"></div>
+            
+            <div style="font-size: 14px; margin-bottom: 4px;"><b>Cliente:</b> ${pedido.cliente}</div>
+            <div style="font-size: 14px; margin-bottom: 4px;"><b>Tipo:</b> ${pedido.tipo.toUpperCase()}</div>
+            ${pedido.tipo === 'entrega' ? `<div style="font-size: 14px; margin-bottom: 4px;"><b>Endereço:</b> ${pedido.endereco}</div>` : ''}
+            <div style="font-size: 14px; margin-bottom: 10px;"><b>Pgto:</b> ${pagamentoTexto}</div>
             
             <div class="linha-tracejada"></div>
             
