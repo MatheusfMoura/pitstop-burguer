@@ -62,9 +62,14 @@
         
         <div id="tela-pedidos" class="tela ativa">
             <header>
-                <div class="header-title">
-                    <button id="btn-status-loja" class="status-loja loja-aberta" onclick="toggleLoja()">CARREGANDO...</button>
-                    <p id="data-hoje" style="margin-top: 5px; font-size: 12px; color: var(--text-muted);"></p>
+                <div class="header-title" style="display: flex; align-items: center; gap: 15px;">
+                    <div>
+                        <button id="btn-status-loja" class="status-loja loja-aberta" onclick="toggleLoja()">CARREGANDO...</button>
+                        <p id="data-hoje" style="margin-top: 5px; font-size: 12px; color: var(--text-muted);"></p>
+                    </div>
+                    <button onclick="abrirModalManual()" style="background: var(--soft-blue); color: var(--text-blue); border: 1px solid rgba(56, 139, 253, 0.4); padding: 10px 18px; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined">add_circle</span> Fazer Pedido Manual
+                    </button>
                 </div>
                 <div class="metrics-container">
                     <div class="metric-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
@@ -535,6 +540,63 @@
 
     <!-- ÁREA DE IMPRESSÃO DA COMANDA (SÓ APARECE NO PAPEL) -->
     <div id="area-impressao" style="display: none;"></div>
+
+<div class="modal-manual-overlay" id="modalManual">
+        <div class="modal-manual-content">
+            <div class="modal-manual-header">
+                <h2 style="color: white; display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="color: var(--text-blue);">point_of_sale</span> 
+                    Lançamento Rápido (Balcão)
+                </h2>
+                <button class="btn-fechar-modal" onclick="fecharModalManual()">&times;</button>
+            </div>
+            
+            <div class="cardapio-container" style="display: flex; gap: 20px; align-items: flex-start; padding: 20px; overflow-y: auto;">
+                <div class="painel-form" style="flex: 1; min-width: 300px;">
+                    <div class="painel-header"><h3>👤 Cliente</h3></div>
+                    <div class="painel-body">
+                        <div class="input-group"><label>Nome</label><input type="text" id="manual-nome" class="input-padrao"></div>
+                        <div style="display: flex; gap: 10px;">
+                            <div class="input-group" style="flex:1;"><label>Tipo</label>
+                                <select id="manual-tipo" class="input-padrao" onchange="document.getElementById('div-manual-end-modal').style.display = this.value === 'entrega' ? 'block' : 'none'">
+                                    <option value="local">Comer no Local</option>
+                                    <option value="retirada">Retirar no Balcão</option>
+                                    <option value="entrega">Delivery</option>
+                                </select>
+                            </div>
+                            <div class="input-group" style="flex:1;"><label>Pgto</label>
+                                <select id="manual-pag" class="input-padrao">
+                                    <option value="dinheiro/cartao">Dinheiro/Cartão</option>
+                                    <option value="pix-ja-pago">Pix Recebido</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group" id="div-manual-end-modal" style="display: none;"><label>Endereço</label><input type="text" id="manual-end" class="input-padrao"></div>
+                        <div class="input-group"><label>Observações</label><input type="text" id="manual-obs" class="input-padrao"></div>
+                    </div>
+                </div>
+
+                <div class="painel-form" style="flex: 1.2; border-color: rgba(255, 152, 0, 0.4);">
+                    <div class="painel-header" style="background: rgba(255, 152, 0, 0.1);"><h3>🛒 Comanda</h3></div>
+                    <div class="painel-body">
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <select id="pdv-produto" class="input-padrao" style="flex: 2;"><option value="">Carregando...</option></select>
+                            <input type="number" id="pdv-qtd" class="input-padrao" value="1" min="1" style="flex: 0.5; text-align: center;">
+                            <button onclick="adicionarItemPDV()" style="background: var(--text-blue); color: black; border: none; border-radius: 6px; font-weight: bold; padding: 0 15px;">Add</button>
+                        </div>
+                        <div id="pdv-lista-itens" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                    </div>
+                    <div class="painel-footer">
+                        <div style="display: flex; gap: 10px; align-items: flex-end; margin-bottom: 15px;">
+                            <div class="input-group" style="flex: 1; margin-bottom: 0;"><label>Taxa (R$)</label><input type="number" id="manual-taxa" class="input-padrao" value="0.00" oninput="calcularTotalPDV()"></div>
+                            <div class="input-group" style="flex: 1; margin-bottom: 0;"><label>Total</label><input type="text" id="manual-total" class="input-padrao" readonly style="color: var(--text-green); font-weight: bold;"></div>
+                        </div>
+                        <button onclick="salvarPedidoManual()" class="btn-salvar-lanche">✅ Enviar para a Cozinha</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </body>
 </html>

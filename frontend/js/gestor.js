@@ -1501,3 +1501,19 @@ window.excluirBairro = async function(id) {
         await deleteDoc(doc(db, "bairros", id));
     }
 }
+
+// CONTROLO DO MODAL DE PEDIDO MANUAL
+window.abrirModalManual = function() {
+    document.getElementById('modalManual').style.display = 'flex';
+}
+
+window.fecharModalManual = function() {
+    document.getElementById('modalManual').style.display = 'none';
+}
+
+// Pequeno ajuste: fechar o modal automaticamente após salvar
+const originalSalvarPedidoManual = window.salvarPedidoManual;
+window.salvarPedidoManual = async function() {
+    await originalSalvarPedidoManual();
+    window.fecharModalManual();
+}
