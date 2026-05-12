@@ -64,13 +64,21 @@ window.sairGestor = function() {
     }
 }
 
-// NAVEGAÇÃO DE TELAS
+// NAVEGAÇÃO DE TELAS E PROTEÇÃO DO CAIXA
 window.mudarTela = function(nomeDaTela) {
     document.querySelectorAll('.tela').forEach(t => t.classList.remove('ativa'));
     document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('ativa'));
     
     document.getElementById('tela-' + nomeDaTela).classList.add('ativa');
     document.getElementById('btn-menu-' + nomeDaTela).classList.add('ativa');
+
+    // Se for a tela de lançar pedido, trava a impressora. Se não, destrava e imprime a fila!
+    if(nomeDaTela === 'novo-pedido') {
+        window.caixaOcupado = true;
+    } else {
+        window.caixaOcupado = false;
+        if(typeof window.liberarFilaDeImpressao === 'function') window.liberarFilaDeImpressao();
+    }
 
     // Se clicar em Relatórios, puxa os dados do Firebase na hora!
     if(nomeDaTela === 'relatorios') {
@@ -658,9 +666,33 @@ window.despacharComMotoboy = async function(id) {
 }
 
 // ==========================================
-// 🖨️ MEMÓRIA DA IMPRESSORA AUTOMÁTICA
+// 🖨️ MEMÓRIA DA IMPRESSORA AUTOMÁTICA E FILA INTELIGENTE
 let pedidosJaImpressos = new Set();
 let primeiraCargaDoPainel = true;
+
+window.filaDeImpressao = [];
+window.caixaOcupado = false; // A trava que impede o congelamento!
+
+window.solicitarImpressao = function(id) {
+    if (window.caixaOcupado) {
+        // Se o caixa estiver a digitar um pedido, guarda na fila silenciosamente
+        if(!window.filaDeImpressao.includes(id)) window.filaDeImpressao.push(id);
+    } else {
+        // Se o caixa estiver livre, imprime na hora
+        imprimirComanda(id);
+    }
+}
+
+window.liberarFilaDeImpressao = function() {
+    if (window.filaDeImpressao.length > 0) {
+        // Pega no pedido mais antigo retido na fila e tira-o de lá
+        const idParaImprimir = window.filaDeImpressao.shift();
+        imprimirComanda(idParaImprimir);
+        
+        // Espera 2.5 segundos e tenta imprimir o próximo para não engasgar a máquina
+        setTimeout(window.liberarFilaDeImpressao, 2500);
+    }
+}
 // ==========================================
 
 const qPedidos = query(collection(db, "pedidos"), orderBy("dataCriacao", "asc"));
@@ -686,13 +718,13 @@ onSnapshot(qPedidos, (snapshot) => {
         pedido.numeroDiario = contadorDiario++; 
 
         // ==========================================
-        // 🖨️ GATILHO: SE CHEGOU PEDIDO NOVO, IMPRIME!
+        // 🖨️ GATILHO: SE CHEGOU PEDIDO NOVO, VAI PARA A FILA!
         // ==========================================
-        // MUDANÇA AQUI: Adicionado o "Em Preparo" para ele imprimir os pedidos manuais que caem direto na cozinha!
         if (!primeiraCargaDoPainel && (pedido.status === "Pendente" || pedido.status === "Em Preparo") && !pedidosJaImpressos.has(id)) {
-            setTimeout(() => { imprimirComanda(id); }, 1500); // Espera 1.5s para renderizar e imprime
+            // Agora ele manda para o nosso sistema inteligente em vez de imprimir direto
+            setTimeout(() => { solicitarImpressao(id); }, 1500); 
         }
-        pedidosJaImpressos.add(id); // Guarda na memória para não imprimir duplicado
+        pedidosJaImpressos.add(id); 
         // ==========================================
 
         dadosCompletosMemoria[id] = pedido;
@@ -1502,13 +1534,16 @@ window.excluirBairro = async function(id) {
     }
 }
 
-// CONTROLO DO MODAL DE PEDIDO MANUAL
+// CONTROLO DO MODAL DE PEDIDO MANUAL E TRAVA DE IMPRESSÃO
 window.abrirModalManual = function() {
+    window.caixaOcupado = true; // Trava a impressora para não congelar!
     document.getElementById('modalManual').style.display = 'flex';
 }
 
 window.fecharModalManual = function() {
+    window.caixaOcupado = false; // Destrava a impressora!
     document.getElementById('modalManual').style.display = 'none';
+    window.liberarFilaDeImpressao(); // Cospe as comandas que ficaram retidas
 }
 
 // Pequeno ajuste: fechar o modal automaticamente após salvar
