@@ -688,7 +688,8 @@ onSnapshot(qPedidos, (snapshot) => {
         // ==========================================
         // 🖨️ GATILHO: SE CHEGOU PEDIDO NOVO, IMPRIME!
         // ==========================================
-        if (!primeiraCargaDoPainel && pedido.status === "Pendente" && !pedidosJaImpressos.has(id)) {
+        // MUDANÇA AQUI: Adicionado o "Em Preparo" para ele imprimir os pedidos manuais que caem direto na cozinha!
+        if (!primeiraCargaDoPainel && (pedido.status === "Pendente" || pedido.status === "Em Preparo") && !pedidosJaImpressos.has(id)) {
             setTimeout(() => { imprimirComanda(id); }, 1500); // Espera 1.5s para renderizar e imprime
         }
         pedidosJaImpressos.add(id); // Guarda na memória para não imprimir duplicado
@@ -1193,8 +1194,9 @@ window.salvarPedidoManual = async function() {
         subtotal: `R$ ${subtotalCalculado.toFixed(2).replace('.', ',')}`,
         taxaEntrega: `R$ ${taxa.toFixed(2).replace('.', ',')}`,
         totalGeral: `R$ ${totalGeral.toFixed(2).replace('.', ',')}`,
-        itens: [...carrinhoPDV], // Joga o carrinho inteiro aqui dentro!
-        status: "Pendente",
+        itens: [...carrinhoPDV], 
+        // MUDANÇA: Agora o pedido manual já entra direto na cozinha (Em Preparo)
+        status: "Em Preparo", 
         dataCriacao: Date.now()
     };
 
@@ -1203,14 +1205,12 @@ window.salvarPedidoManual = async function() {
     btn.disabled = true;
 
     try {
-        // Envia para o banco e captura o ID do pedido gerado na hora
-        const docRef = await addDoc(collection(db, "pedidos"), pacote);
+        // Envia para o banco
+        await addDoc(collection(db, "pedidos"), pacote);
         
-        // 🖨️ MÁGICA DA IMPRESSÃO IMEDIATA
-        // Alimentamos a memória e evitamos que o radar automático duplique a impressão
-        pedidosJaImpressos.add(docRef.id); 
-        dadosCompletosMemoria[docRef.id] = pacote;
-        imprimirComanda(docRef.id); 
+        // A impressão imediata foi removida daqui!
+        // O nosso "Radar" vai detectar que chegou um pedido novo na cozinha,
+        // vai colocar o Número Sequencial nele e mandar imprimir automaticamente!
 
         // Esvazia tudo para o próximo pedido
         document.getElementById('manual-nome').value = '';
