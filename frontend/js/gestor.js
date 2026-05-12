@@ -1318,17 +1318,15 @@ window.imprimirComanda = function(id) {
         </html>
     `;
 
-    // Cria uma impressora invisível (Iframe) para não travar a tela do painel
-    let iframe = document.getElementById('iframe-impressora');
-    if (!iframe) {
-        iframe = document.createElement('iframe');
-        iframe.id = 'iframe-impressora';
-        iframe.style.position = 'absolute';
-        iframe.style.width = '0px';
-        iframe.style.height = '0px';
-        iframe.style.border = 'none';
-        document.body.appendChild(iframe);
-    }
+    // Cria uma impressora invisível ÚNICA para não misturar pedidos simultâneos
+    const idIframeUnico = 'iframe-impressora-' + id + '-' + Date.now();
+    let iframe = document.createElement('iframe');
+    iframe.id = idIframeUnico;
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0px';
+    iframe.style.height = '0px';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
 
     // Escreve o recibo dentro desse arquivo invisível
     const docIframe = iframe.contentWindow.document;
@@ -1340,6 +1338,12 @@ window.imprimirComanda = function(id) {
     setTimeout(() => {
         iframe.contentWindow.focus();
         iframe.contentWindow.print();
+        
+        // Remove a janela fantasma depois de 5 segundos para não pesar o computador
+        setTimeout(() => {
+            const ifrLimpar = document.getElementById(idIframeUnico);
+            if (ifrLimpar) ifrLimpar.remove();
+        }, 5000);
     }, 100);
 }
 
