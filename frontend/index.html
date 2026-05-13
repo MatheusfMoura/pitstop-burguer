@@ -548,6 +548,13 @@
                 setTimeout(() => window.iniciarRastreador(), 1000);
             }
         });
+        // --- PUXAR OS ADICIONAIS GLOBAIS DO FIREBASE ---
+        window.adicionaisGlobaisMemoria = [];
+        onSnapshot(collection(db, "adicionais_global"), (snapshot) => {
+            window.adicionaisGlobaisMemoria = [];
+            snapshot.forEach(doc => window.adicionaisGlobaisMemoria.push(doc.data()));
+        });
+        
         // --- PUXAR O CARDÁPIO DO FIREBASE EM TEMPO REAL ---
         const qProdutos = query(collection(db, "produtos"), orderBy("idProduto", "asc"));
         

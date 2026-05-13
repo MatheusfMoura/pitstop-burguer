@@ -433,7 +433,8 @@ input:checked + .ios-slider:before {
 
 .modal-manual-header {
     background: transparent !important;
-    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    padding: 10px 25px !important; /* Reduzimos a altura pela metade! */
 }
 
 /* Remove a borda laranja e fundos secos */
@@ -576,4 +577,15 @@ input:checked + .ios-slider:before {
     background: transparent;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     padding: 10px 20px; /* Reduzimos de 20px para 10px para espremer a barra! */
+}
+
+/* Remove as setas (spinners) de campos de número no Chrome, Safari, Edge e Firefox */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
 }

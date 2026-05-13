@@ -100,6 +100,7 @@ window.mudarTela = function(nomeDaTela) {
 let tempIngredientes = [];
 let tempAdicionais = [];
 let tempOpcoes = [];
+let tempReceita = []; // MÁGICA: Memória da Ficha Técnica
 let produtosNoBanco = [];
 let idLancheEmEdicao = null;
 
@@ -242,7 +243,7 @@ window.editarProdutoReal = function(docId) {
     const prod = produtosNoBanco.find(p => p.idFirebase === docId);
     if(!prod) return;
 
-    idLancheEmEdicao = docId; 
+    idLancheEmEdicao = docId;
 
     document.getElementById('form-nome').value = prod.nome || '';
     document.getElementById('form-preco').value = prod.preco || '';
@@ -252,6 +253,7 @@ window.editarProdutoReal = function(docId) {
     tempIngredientes = prod.ingredientes ? [...prod.ingredientes] : [];
     tempAdicionais = prod.adicionais ? [...prod.adicionais] : [];
     tempOpcoes = prod.opcoes ? [...prod.opcoes] : [];
+    tempReceita = prod.receita ? [...prod.receita] : []; // Carrega Ficha Técnica
     renderizarListasTemp();
 
     document.getElementById('titulo-form-lanche').innerText = "✏️ Editando: " + prod.nome;
@@ -270,6 +272,7 @@ window.cancelarEdicao = function() {
     tempIngredientes = [];
     tempAdicionais = [];
     tempOpcoes = [];
+    tempReceita = []; // Limpa Ficha Técnica
     renderizarListasTemp();
 
     document.getElementById('titulo-form-lanche').innerText = "✨ Novo Lanche";
@@ -282,40 +285,35 @@ window.salvarEdicaoReal = async function() {
     const nome = document.getElementById('form-nome').value;
     const preco = parseFloat(document.getElementById('form-preco').value.replace(',', '.'));
     const imgFinal = document.getElementById('form-img').value.trim().replace(/['"]/g, '');
-    const categoriaEscolhida = document.getElementById('form-categoria').value; // PEGA A CATEGORIA
+    const categoriaEscolhida = document.getElementById('form-categoria').value; 
 
-    if(!nome || isNaN(preco)) {
-        return alert("⚠️ Nome e Preço são obrigatórios!");
-    }
+    if(!nome || isNaN(preco)) return alert("⚠️ Nome e Preço são obrigatórios!");
 
     const dadosAtualizados = {
         nome: nome,
         preco: preco,
         imagem: imgFinal, 
-        categoria: categoriaEscolhida, // ATUALIZA A CATEGORIA
+        categoria: categoriaEscolhida, 
         ingredientes: [...tempIngredientes],
         adicionais: [...tempAdicionais],
-        opcoes: [...tempOpcoes] 
+        opcoes: [...tempOpcoes],
+        receita: [...tempReceita] // Salva a Receita!
     };
 
     try {
         await updateDoc(doc(db, "produtos", idLancheEmEdicao), dadosAtualizados);
         alert("✏️ Lanche atualizado com sucesso!");
         cancelarEdicao(); 
-    } catch(erro) {
-        alert("Erro ao atualizar: " + erro);
-    }
+    } catch(erro) { alert("Erro ao atualizar: " + erro); }
 }
 
 window.salvarNovoLanche = async function() {
     const nome = document.getElementById('form-nome').value;
     const preco = parseFloat(document.getElementById('form-preco').value.replace(',', '.'));
     const imgFinal = document.getElementById('form-img').value.trim().replace(/['"]/g, '');
-    const categoriaEscolhida = document.getElementById('form-categoria').value; // PEGA A CATEGORIA
+    const categoriaEscolhida = document.getElementById('form-categoria').value; 
 
-    if(!nome || isNaN(preco)) {
-        return alert("⚠️ Nome e Preço são obrigatórios!");
-    }
+    if(!nome || isNaN(preco)) return alert("⚠️ Nome e Preço são obrigatórios!");
 
     let maxId = 0;
     produtosNoBanco.forEach(p => { if(p.idProduto > maxId) maxId = p.idProduto; });
@@ -325,19 +323,18 @@ window.salvarNovoLanche = async function() {
         nome: nome,
         preco: preco,
         imagem: imgFinal,
-        categoria: categoriaEscolhida, // SALVA A CATEGORIA
+        categoria: categoriaEscolhida, 
         ingredientes: [...tempIngredientes],
         adicionais: [...tempAdicionais],
-        opcoes: [...tempOpcoes] 
+        opcoes: [...tempOpcoes],
+        receita: [...tempReceita] // Salva a Receita!
     };
 
     try {
         await addDoc(collection(db, "produtos"), novoProduto);
         cancelarEdicao(); 
         alert("🍔 Lanche publicado no site com sucesso!");
-    } catch(erro) {
-        alert("Erro: " + erro);
-    }
+    } catch(erro) { alert("Erro: " + erro); }
 }
 
 window.excluirProdutoReal = async function(event, docId) {
@@ -379,10 +376,35 @@ window.adicionarOpcaoTemp = function() {
     }
 }
 
+window.adicionarInsumoReceita = function() {
+    const select = document.getElementById('in-receita-insumo');
+    const qtd = parseInt(document.getElementById('in-receita-qtd').value);
+    const idInsumo = select.value;
+    const nomeInsumo = select.options[select.selectedIndex].text;
+
+    if(idInsumo && qtd > 0) {
+        tempReceita.push({ idInsumo, nome: nomeInsumo, quantidade: qtd });
+        document.getElementById('in-receita-qtd').value = '';
+        renderizarListasTemp();
+    }
+}
+
+window.atualizarSelectInsumosNoLanche = function() {
+    const select = document.getElementById('in-receita-insumo');
+    if(!select) return;
+    select.innerHTML = '<option value="">Selecione um insumo...</option>';
+    if (typeof insumosNaMemoria !== 'undefined') {
+        insumosNaMemoria.forEach(ins => {
+            select.innerHTML += `<option value="${ins.id}">${ins.nome}</option>`;
+        });
+    }
+}
+
 window.removerItemTemp = function(tipo, index) {
     if(tipo === 'ing') tempIngredientes.splice(index, 1);
     if(tipo === 'add') tempAdicionais.splice(index, 1);
     if(tipo === 'opt') tempOpcoes.splice(index, 1);
+    if(tipo === 'rec') tempReceita.splice(index, 1); // Remove Receita
     renderizarListasTemp();
 }
 
@@ -396,7 +418,7 @@ function renderizarListasTemp() {
     }
 
     const boxAdd = document.getElementById('box-adicionais-temp');
-    if(boxAdd) { // <-- A BLINDAGEM ESTÁ AQUI
+    if(boxAdd) { 
         boxAdd.innerHTML = '';
         tempAdicionais.forEach((add, i) => {
             boxAdd.innerHTML += `<span class="tag-item">${add.nome} (+R$${add.preco.toFixed(2)}) <button class="btn-remover-tag" onclick="removerItemTemp('add', ${i})">×</button></span>`;
@@ -408,6 +430,14 @@ function renderizarListasTemp() {
         boxOpt.innerHTML = '';
         tempOpcoes.forEach((opt, i) => {
             boxOpt.innerHTML += `<span class="tag-item" style="border-color: var(--text-orange);">${opt.nome} (R$${opt.preco.toFixed(2)}) <button class="btn-remover-tag" onclick="removerItemTemp('opt', ${i})">×</button></span>`;
+        });
+    }
+
+    const boxRec = document.getElementById('box-receita-temp');
+    if(boxRec) {
+        boxRec.innerHTML = '';
+        tempReceita.forEach((rec, i) => {
+            boxRec.innerHTML += `<span class="tag-item" style="border-color: var(--text-blue);">${rec.quantidade}x ${rec.nome} <button class="btn-remover-tag" onclick="removerItemTemp('rec', ${i})">×</button></span>`;
         });
     }
 }
@@ -617,42 +647,32 @@ window.mudarStatus = async (idDoPedido, novoStatus) => {
     try { 
         let pacoteAtualizacao = { status: novoStatus };
 
-        // --- MÁGICA DO ESTOQUE DE PÃES AUTOMÁTICO ---
+        // --- MÁGICA: DESCONTO AUTOMÁTICO (PRODUTO + COZINHA) ---
         if (novoStatus === 'Pronto') {
             const pedido = dadosCompletosMemoria[idDoPedido];
             
-            // Garante que só desconta 1 vez por pedido (proteção contra cliques duplos)
-            if (pedido && !pedido.paesDescontados && pedido.itens) {
-                let paesConsumidos = 0;
-                
-                pedido.itens.forEach(item => {
-                    // Procura o item no banco de dados para confirmar se ele pertence à categoria que usa pão
-                    const produtoOriginal = produtosNoBanco.find(p => p.idProduto === item.idProdutoOriginal || p.nome === item.nome.replace(' (Personalizado)', ''));
-                    if (produtoOriginal && (produtoOriginal.categoria === 'Hamburguers' || produtoOriginal.categoria === 'Sanduíches')) {
-                        paesConsumidos += item.quantidade;
-                    }
-                });
-
-                if (paesConsumidos > 0) {
-                    // Desconta do estoque global usando a matemática segura do Firebase (increment negativo)
-                    await updateDoc(doc(db, "configuracoes", "loja"), {
-                        estoquePaes: increment(-paesConsumidos)
-                    });
-                }
-
-                // --- MÁGICA DO ESTOQUE INDIVIDUAL (BEBIDAS E PORÇÕES) ---
+            if (pedido && !pedido.estoqueDescontado && pedido.itens) {
                 for (const item of pedido.itens) {
                     const produtoOriginal = produtosNoBanco.find(p => p.idProduto === item.idProdutoOriginal || p.nome === item.nome.replace(' (Personalizado)', ''));
-                    // Se este produto tiver controle de estoque ativo (número diferente de nulo), desconta!
+                    
+                    // 1. Desconto do Produto Final (Ex: Bebida)
                     if (produtoOriginal && produtoOriginal.idFirebase && produtoOriginal.estoque !== undefined && produtoOriginal.estoque !== null) {
                         await updateDoc(doc(db, "produtos", produtoOriginal.idFirebase), {
                             estoque: increment(-item.quantidade)
                         });
                     }
-                }
 
-                // Marca no pedido que o estoque global já foi cobrado para não duplicar!
-                pacoteAtualizacao.paesDescontados = true; 
+                    // 2. Desconto da FICHA TÉCNICA (Ex: Salsicha, Pão)
+                    if (produtoOriginal && produtoOriginal.receita && produtoOriginal.receita.length > 0) {
+                        for (const ingrediente of produtoOriginal.receita) {
+                            const totalParaDescontar = ingrediente.quantidade * item.quantidade;
+                            await updateDoc(doc(db, "insumos", ingrediente.idInsumo), {
+                                quantidade: increment(-totalParaDescontar)
+                            });
+                        }
+                    }
+                }
+                pacoteAtualizacao.estoqueDescontado = true; 
             }
         }
         // ---------------------------------------------
@@ -804,6 +824,7 @@ let motoboysNoBanco = [];
 
 onSnapshot(collection(db, "motoboys"), (snapshot) => {
     const grid = document.getElementById('grid-motoboys');
+    if(!grid) return;
     grid.innerHTML = '';
     motoboysNoBanco = [];
 
@@ -813,12 +834,17 @@ onSnapshot(collection(db, "motoboys"), (snapshot) => {
         motoboysNoBanco.push({ id, ...moto });
 
         grid.innerHTML += `
-            <div class="item-row" style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
-                <div>
-                    <strong style="color: white;">${moto.nome}</strong><br>
-                    <span style="font-size: 12px; color: var(--text-muted);">${moto.telefone} | ${moto.placa || 'Sem placa'}</span>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; transition: 0.2s;">
+                <div style="background: var(--soft-blue); color: var(--text-blue); width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">directions_bike</span>
                 </div>
-                <button onclick="excluirMotoboy('${id}')" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>
+                <div style="flex: 1; min-width: 0;">
+                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${moto.nome}</strong>
+                    <span style="font-size: 10px; color: var(--text-muted);">${moto.telefone}</span>
+                </div>
+                <button onclick="excluirMotoboy('${id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; transition: 0.2s;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                </button>
             </div>
         `;
     });
@@ -1424,103 +1450,6 @@ window.imprimirComanda = function(id) {
 }
 
 // ==========================================
-// MÓDULO DE ESTOQUE DE PÃES (AO VIVO)
-// ==========================================
-
-// 1. Fica a escutar o Firebase para atualizar o visor na hora
-onSnapshot(doc(db, "configuracoes", "loja"), (documento) => {
-    if (documento.exists()) {
-        const dadosLoja = documento.data();
-        const visor = document.getElementById('visor-paes');
-        
-        if (visor && dadosLoja.estoquePaes !== undefined) {
-            visor.innerText = dadosLoja.estoquePaes + " unidades";
-            
-            // Alerta de estoque baixo: Fica vermelho se tiver 10 pães ou menos
-            if(dadosLoja.estoquePaes <= 10) {
-                visor.style.color = "var(--text-red)";
-            } else {
-                visor.style.color = "var(--text-main)";
-            }
-        }
-    }
-});
-
-// 2. Função do Botão para o Gestor digitar os pães do dia
-window.definirEstoque = async function() {
-    const qtd = prompt("🍔 Quantos pães físicos você tem agora para iniciar o turno?");
-    
-    // Verifica se o gestor digitou um número válido
-    if (qtd !== null && qtd.trim() !== "" && !isNaN(qtd)) {
-        try {
-            await updateDoc(doc(db, "configuracoes", "loja"), {
-                estoquePaes: parseInt(qtd)
-            });
-            alert(`✅ Estoque iniciado com ${qtd} pães! O sistema vai abater automaticamente a cada hambúrguer vendido.`);
-        } catch (error) {
-            console.error("Erro ao atualizar estoque:", error);
-            alert("Erro ao atualizar o estoque. Verifique sua internet.");
-        }
-    }
-}
-
-// COLE NO FINAL DO GESTOR.JS
-let estoqueMaximo = localStorage.getItem('estoque_max_dia') || 100;
-
-onSnapshot(doc(db, "configuracoes", "loja"), (docSnap) => {
-    if (docSnap.exists()) {
-        const dados = docSnap.data();
-        const visor = document.getElementById('visor-paes');
-        const barra = document.getElementById('barra-progresso-paes');
-        const txtPercent = document.getElementById('status-percent');
-
-        if (visor && dados.estoquePaes !== undefined) {
-            const atual = dados.estoquePaes;
-            visor.innerText = atual;
-
-            // Cálculo da barra com Trava Anti-Bug (Novo)
-            let perc = Math.round((atual / estoqueMaximo) * 100);
-            
-            // Se a matemática der erro (NaN), força para 0
-            if (isNaN(perc)) perc = 0; 
-            
-            if (perc > 100) perc = 100;
-            if (perc < 0) perc = 0;
-
-            barra.style.width = perc + "%";
-            txtPercent.innerText = perc + "%";
-
-            // Cores dinâmicas
-            if (perc > 50) {
-                barra.style.background = "var(--text-green)";
-                txtPercent.style.color = "var(--text-green)";
-                txtPercent.style.background = "var(--soft-green)";
-            } else if (perc > 20) {
-                barra.style.background = "var(--text-orange)";
-                txtPercent.style.color = "var(--text-orange)";
-                txtPercent.style.background = "var(--soft-orange)";
-            } else {
-                barra.style.background = "var(--text-red)";
-                txtPercent.style.color = "var(--text-red)";
-                txtPercent.style.background = "var(--soft-red)";
-            }
-        }
-    }
-});
-
-window.definirEstoque = async function() {
-    const qtd = prompt("🍔 Quantos pães você tem agora para iniciar o turno?");
-    if (qtd && !isNaN(qtd)) {
-        estoqueMaximo = parseInt(qtd);
-        localStorage.setItem('estoque_max_dia', qtd);
-        try {
-            await updateDoc(doc(db, "configuracoes", "loja"), { estoquePaes: estoqueMaximo });
-            alert("Estoque iniciado!");
-        } catch (e) { alert("Erro ao salvar estoque."); }
-    }
-};
-
-// ==========================================
 // GESTÃO DE BAIRROS E TAXAS DE ENTREGA
 // ==========================================
 
@@ -1537,12 +1466,14 @@ onSnapshot(collection(db, "bairros"), (snapshot) => {
         const corTaxa = b.taxa === 0 ? "var(--text-green)" : "white";
 
         grid.innerHTML += `
-            <div class="item-row" style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card);">
-                <div>
-                    <strong style="color: white;">${b.nome}</strong><br>
-                    <span style="font-size: 12px; color: ${corTaxa}; font-weight: bold;">Taxa: ${taxaTexto}</span>
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--text-orange)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                <div style="flex: 1; min-width: 0;">
+                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.nome}</strong>
+                    <span style="font-size: 11px; color: ${corTaxa}; font-weight: bold;">Taxa: ${taxaTexto}</span>
                 </div>
-                <button onclick="excluirBairro('${id}')" style="background: none; border: none; cursor: pointer; font-size: 18px;">🗑️</button>
+                <button onclick="excluirBairro('${id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; transition: 0.2s;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                </button>
             </div>
         `;
     });
@@ -1636,3 +1567,266 @@ document.addEventListener('click', function(event) {
         if(panel) panel.classList.remove('open');
     }
 });
+
+// ==========================================
+// 📦 MÓDULO DE ESTOQUE RÁPIDO (DINÂMICO)
+// ==========================================
+window.abrirModalEstoque = function() {
+    document.getElementById('modalEstoque').style.display = 'flex';
+    renderizarEstoqueModal(); // Desenha a lista de produtos na hora!
+}
+
+window.fecharModalEstoque = function() {
+    document.getElementById('modalEstoque').style.display = 'none';
+}
+
+window.filtrarEstoque = function() {
+    const categoria = document.getElementById('filtro-categoria-estoque').value;
+    renderizarEstoqueModal(categoria);
+}
+
+window.renderizarEstoqueModal = function(categoriaFiltro = 'todas') {
+    const grid = document.getElementById('grid-estoque');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    produtosNoBanco.forEach(p => {
+        if (categoriaFiltro !== 'todas' && p.categoria !== categoriaFiltro) return;
+
+        const fotoUrl = (p.imagem && p.imagem.startsWith('http')) ? p.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+        const valorEstoque = (p.estoque !== undefined && p.estoque !== null) ? p.estoque : '';
+
+        // --- MÁGICA: SEPARA LANCHES DE BEBIDAS ---
+        const isLanche = ['Hamburguers', 'Sanduíches', 'Porções'].includes(p.categoria);
+        let controleHTML = '';
+
+        if (isLanche) {
+            // Lógica do botão On/Off (Estoque infinito vs Zero)
+            const isAtivo = !(p.estoque !== undefined && p.estoque !== null && p.estoque <= 0);
+            const checkedAttr = isAtivo ? 'checked' : '';
+            
+            controleHTML = `
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                    <label style="font-size: 10px; color: var(--text-muted); font-weight: bold;">STATUS NO SITE</label>
+                    <label class="ios-switch" style="transform: scale(0.8); transform-origin: right; margin-top: 2px;">
+                        <input type="checkbox" ${checkedAttr} onchange="toggleEstoqueLanche('${p.idFirebase}', this)">
+                        <span class="ios-slider"></span>
+                    </label>
+                </div>
+            `;
+        } else {
+            // Lógica da caixinha de quantidade (Bebidas, Sobremesas)
+            controleHTML = `
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                    <label style="font-size: 10px; color: var(--text-muted); font-weight: bold;">QTD DISPONÍVEL</label>
+                    <input type="number" min="0" value="${valorEstoque}" placeholder="Infinito" onchange="salvarEstoqueItem('${p.idFirebase}', this)" style="width: 80px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-orange); padding: 8px; border-radius: 6px; font-weight: bold; outline: none; transition: 0.3s;">
+                </div>
+            `;
+        }
+
+        grid.innerHTML += `
+            <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; transition: 0.2s;">
+                <img src="${fotoUrl}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="flex: 1;">
+                    <strong style="color: white; font-size: 14px; display: block; margin-bottom: 4px;">${p.nome}</strong>
+                    <span style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${p.categoria}</span>
+                </div>
+                ${controleHTML}
+            </div>
+        `;
+    });
+
+    if(grid.innerHTML === '') {
+        grid.innerHTML = '<p style="color: var(--text-muted); padding: 20px; width: 100%; grid-column: 1 / -1; text-align: center;">Nenhum produto encontrado nesta categoria.</p>';
+    }
+}
+
+// NOVA FUNÇÃO EXCLUSIVA PARA O BOTÃO DOS LANCHES
+window.toggleEstoqueLanche = async function(idFirebase, checkboxElement) {
+    // Se ligou -> Infinito (null). Se desligou -> Esgotado (0)
+    let valorParaSalvar = checkboxElement.checked ? null : 0;
+
+    try {
+        await updateDoc(doc(db, "produtos", idFirebase), {
+            estoque: valorParaSalvar
+        });
+        
+        // Um pequeno feedback visual piscando a bordinha da caixa
+        const card = checkboxElement.closest('div[style*="background: var(--bg-main)"]');
+        if(card) {
+            card.style.borderColor = checkboxElement.checked ? "var(--text-green)" : "var(--text-red)";
+            setTimeout(() => { card.style.borderColor = "var(--border-color)"; }, 1000);
+        }
+
+    } catch (error) {
+        console.error("Erro ao alterar status do lanche:", error);
+        alert("Erro ao alterar a disponibilidade. Verifique a internet.");
+        checkboxElement.checked = !checkboxElement.checked; // Reverte o botão se der erro
+    }
+}
+
+window.salvarEstoqueItem = async function(idFirebase, inputElement) {
+    let novoEstoque = inputElement.value.trim();
+    
+    // Se o cliente apagar o número da caixinha, volta a ser "Estoque Infinito" (salvamos null)
+    let valorParaSalvar = novoEstoque === '' ? null : parseInt(novoEstoque);
+
+    try {
+        // Atualiza direto no Firebase em tempo real
+        await updateDoc(doc(db, "produtos", idFirebase), {
+            estoque: valorParaSalvar
+        });
+        
+        // Efeito visual de Sucesso (Pisca verde rapidinho!)
+        inputElement.style.borderColor = "var(--text-green)";
+        inputElement.style.color = "var(--text-green)";
+        setTimeout(() => {
+            inputElement.style.borderColor = "var(--border-color)";
+            inputElement.style.color = "var(--text-orange)";
+        }, 1200);
+
+    } catch (error) {
+        console.error("Erro ao salvar estoque:", error);
+        alert("Erro ao salvar o número. Verifique a internet.");
+    }
+}
+
+// ==========================================
+// 🍳 MÓDULO DE ESTOQUE DE COZINHA (INSUMOS)
+// ==========================================
+let insumosNaMemoria = [];
+
+// 1. Escuta o Firebase para atualizar a lista de insumos em tempo real
+onSnapshot(collection(db, "insumos"), (snapshot) => {
+    insumosNaMemoria = [];
+    const grid = document.getElementById('grid-insumos');
+    if(!grid) return;
+    grid.innerHTML = '';
+
+    snapshot.forEach((docSnap) => {
+        const insumo = docSnap.data();
+        const id = docSnap.id;
+        insumosNaMemoria.push({ id, ...insumo });
+
+        grid.innerHTML += `
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 15px; display: flex; align-items: center; gap: 12px; transition: 0.2s;">
+                <div style="flex: 1; min-width: 0;">
+                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize;">${insumo.nome}</strong>
+                    <span style="font-size: 11px; color: var(--text-muted);">Estoque: <b style="color: var(--text-orange);">${insumo.quantidade}</b></span>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03);">
+                    <input type="number" id="entrada-${id}" placeholder="+ Qtd" style="width: 50px; background: transparent; border: none; color: var(--text-green); font-size: 12px; font-weight: bold; outline: none; text-align: center;">
+                    <button onclick="entradaInsumo('${id}')" style="background: var(--text-green); color: black; border: none; border-radius: 4px; width: 26px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; font-weight: bold;">add</span>
+                    </button>
+                </div>
+
+                <button onclick="excluirInsumo('${id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s; display: flex; align-items: center;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                </button>
+            </div>
+        `;
+    });
+    
+    // Mantém a caixinha do "Novo Lanche" atualizada com a lista de insumos
+    if (typeof window.atualizarSelectInsumosNoLanche === 'function') window.atualizarSelectInsumosNoLanche();
+});
+
+window.abrirModalCozinha = () => document.getElementById('modalCozinha').style.display = 'flex';
+window.fecharModalCozinha = () => document.getElementById('modalCozinha').style.display = 'none';
+
+window.cadastrarNovoInsumo = async function() {
+    const nome = document.getElementById('novo-insumo-nome').value.trim();
+    const qtd = parseInt(document.getElementById('novo-insumo-qtd').value) || 0;
+
+    if(!nome) return alert("Digite o nome do insumo!");
+
+    try {
+        await addDoc(collection(db, "insumos"), { nome, quantidade: qtd });
+        document.getElementById('novo-insumo-nome').value = '';
+        document.getElementById('novo-insumo-qtd').value = '';
+    } catch (e) { alert("Erro ao salvar insumo."); }
+}
+
+window.atualizarQtdInsumo = async function(id, novaQtd) {
+    try {
+        await updateDoc(doc(db, "insumos", id), { quantidade: parseInt(novaQtd) });
+    } catch (e) { alert("Erro ao atualizar."); }
+}
+
+window.entradaInsumo = async function(id) {
+    const input = document.getElementById(`entrada-${id}`);
+    const valorAdicional = parseInt(input.value);
+
+    if (isNaN(valorAdicional) || valorAdicional <= 0) {
+        return alert("Digite uma quantidade válida para adicionar.");
+    }
+
+    try {
+        // MÁGICA: O Firebase pega o valor que já existe lá e soma com o novo!
+        await updateDoc(doc(db, "insumos", id), {
+            quantidade: increment(valorAdicional)
+        });
+        
+        input.value = ''; // Limpa o campo após somar
+    } catch (e) {
+        alert("Erro ao dar entrada no estoque.");
+    }
+}
+
+window.excluirInsumo = async function(id) {
+    if(confirm("Remover este insumo do controle?")) {
+        await deleteDoc(doc(db, "insumos", id));
+    }
+}
+
+// ==========================================
+// ➕ MOTOR DE ADICIONAIS GLOBAIS (ERP)
+// ==========================================
+window.abrirModalAdicionais = () => {
+    document.getElementById('modalAdicionais').style.display = 'flex';
+    carregarAdicionaisGlobais();
+};
+window.fecharModalAdicionais = () => document.getElementById('modalAdicionais').style.display = 'none';
+
+window.cadastrarAdicionalGlobal = async function() {
+    const nome = document.getElementById('novo-add-nome').value.trim();
+    const preco = parseFloat(document.getElementById('novo-add-preco').value.replace(',', '.'));
+
+    if(!nome || isNaN(preco)) return alert("Preencha nome e preço corretamente!");
+
+    try {
+        await addDoc(collection(db, "adicionais_global"), { nome, preco });
+        document.getElementById('novo-add-nome').value = '';
+        document.getElementById('novo-add-preco').value = '';
+    } catch (e) { alert("Erro ao salvar adicional."); }
+};
+
+function carregarAdicionaisGlobais() {
+    onSnapshot(collection(db, "adicionais_global"), (snapshot) => {
+        const grid = document.getElementById('grid-adicionais-global');
+        if(!grid) return;
+        grid.innerHTML = '';
+
+        snapshot.forEach((docSnap) => {
+            const add = docSnap.data();
+            const id = docSnap.id;
+            grid.innerHTML += `
+                <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong style="color: white; font-size: 15px;">${add.nome}</strong>
+                        <span style="color: var(--text-green); font-size: 13px; margin-left: 10px; font-weight: bold;">+ R$ ${add.preco.toFixed(2).replace('.',',')}</span>
+                    </div>
+                    <button onclick="excluirAdicionalGlobal('${id}')" style="background:rgba(255,255,255,0.05); border:none; color:var(--text-red); width:32px; height:32px; border-radius:6px; cursor:pointer; font-size:18px;">&times;</button>
+                </div>
+            `;
+        });
+    });
+}
+
+window.excluirAdicionalGlobal = async (id) => {
+    if(confirm("Deseja remover este adicional de todos os lanches?")) {
+        await deleteDoc(doc(db, "adicionais_global", id));
+    }
+};

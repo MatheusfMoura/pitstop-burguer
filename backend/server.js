@@ -28,26 +28,8 @@ app.post('/api/pedidos', async (req, res) => {
         const pacoteDeDados = req.body;
         console.log("🔔 Recebendo pedido de:", pacoteDeDados.cliente);
 
-        // LÓGICA DE ESTOQUE: DESCONTO DOS PÃES
-        let paesConsumidos = 0;
-        if(pacoteDeDados.itens) {
-            pacoteDeDados.itens.forEach(item => {
-                // Inteligência: Desconta se a categoria for "Hamburguers" OU "Sanduíches"
-                // Ignora automaticamente batatas, porções e bebidas!
-                if (item.categoria === "Hamburguers" || item.categoria === "Sanduíches") {
-                    paesConsumidos += item.quantidade;
-                }
-            });
-        }
-
-        // Se o pedido consumiu algum pão, manda o Firebase subtrair de forma segura
-        if (paesConsumidos > 0) {
-            const configRef = db.collection('configuracoes').doc('loja');
-            await configRef.update({
-                estoquePaes: admin.firestore.FieldValue.increment(-paesConsumidos)
-            });
-            console.log(`🍞 Descontando ${paesConsumidos} pães do estoque...`);
-        }
+        // Lógica de estoque de pães engessada removida.
+        // O estoque agora é gerido item a item de forma dinâmica pelo KDS!
 
         // Carimba a data exata e o status
         pacoteDeDados.dataCriacao = admin.firestore.FieldValue.serverTimestamp();

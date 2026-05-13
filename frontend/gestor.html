@@ -42,9 +42,6 @@
         <div class="menu-item" id="btn-menu-motoboys" onclick="mudarTela('motoboys')" title="Gestão de Motoboys">
             <span class="material-symbols-outlined" style="font-size: 26px;">two_wheeler</span>
         </div>
-        <div class="menu-item" id="btn-menu-estoque" onclick="mudarTela('estoque')" title="Controle de Estoque">
-            <span class="material-symbols-outlined" style="font-size: 26px;">inventory_2</span>
-        </div>
         <div class="menu-item" id="btn-menu-relatorios" onclick="mudarTela('relatorios')" title="Dashboard e Relatórios">
             <span class="material-symbols-outlined" style="font-size: 26px;">bar_chart</span>
         </div>
@@ -78,29 +75,27 @@
                         <strong id="metric-receita" style="color: var(--text-green);">R$ 0,00</strong>
                     </div>
                     
-                    <div class="metric-box" style="border-left: 3px solid var(--text-orange); padding-left: 15px; display: flex; flex-direction: column; justify-content: center; min-width: 180px;">
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                            <span style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted);">
-                                <span class="material-symbols-outlined" style="font-size: 16px; color: var(--text-orange);">bakery_dining</span> 
-                                Estoque Pães
-                            </span>
-                            <span id="status-percent" style="background: rgba(227, 179, 65, 0.2); color: var(--text-orange); padding: 2px 6px; border-radius: 8px; font-size: 10px; font-weight: bold;">--%</span>
+                    <div class="metric-box" style="border-left: 3px solid var(--text-blue); padding-left: 15px; display: flex; flex-direction: column; justify-content: center; min-width: 180px; cursor: pointer; transition: 0.2s;" onclick="abrirModalEstoque()" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 100%;">
+                            <div style="background: var(--soft-blue); color: var(--text-blue); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <span class="material-symbols-outlined" style="font-size: 26px;">inventory_2</span>
+                            </div>
+                            <div style="text-align: left;">
+                                <strong style="color: white; font-size: 15px; display: block; margin-bottom: 2px;">Estoque Rápido</strong>
+                                <span style="font-size: 11px; color: var(--text-muted); text-transform: none;">Controlar cardápio</span>
+                            </div>
                         </div>
-                        
-                        <div style="display: flex; align-items: baseline; gap: 5px; margin-bottom: 8px;">
-                            <strong id="visor-paes" style="font-size: 22px; color: var(--text-main); margin: 0;">--</strong>
-                            <span style="font-size: 10px; color: var(--text-muted); font-weight: bold;">UNID.</span>
+                    </div>
+                    <div class="metric-box" style="border-left: 3px solid var(--text-orange); padding-left: 15px; display: flex; flex-direction: column; justify-content: center; min-width: 180px; cursor: pointer; transition: 0.2s;" onclick="abrirModalCozinha()" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 100%;">
+                            <div style="background: var(--soft-orange); color: var(--text-orange); width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                <span class="material-symbols-outlined" style="font-size: 26px;">kitchen</span>
+                            </div>
+                            <div style="text-align: left;">
+                                <strong style="color: white; font-size: 15px; display: block; margin-bottom: 2px;">Estoque Cozinha</strong>
+                                <span style="font-size: 11px; color: var(--text-muted); text-transform: none;">Salsicha, pães...</span>
+                            </div>
                         </div>
-
-                        <div style="background: rgba(255,255,255,0.05); height: 4px; border-radius: 5px; width: 100%; overflow: hidden; margin-bottom: 8px;">
-                            <div id="barra-progresso-paes" style="width: 0%; height: 100%; background: var(--text-orange); transition: width 0.8s;"></div>
-                        </div>
-
-                        <button onclick="definirEstoque()" style="background: rgba(227, 179, 65, 0.1); color: var(--text-orange); border: 1px solid rgba(227, 179, 65, 0.3); padding: 5px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; width: 100%; transition: 0.2s;">
-                            REPOR ESTOQUE
-                        </button>
-
                     </div>
                 </div>
             </header>
@@ -120,9 +115,14 @@
                     <h1 style="font-size: 20px; margin: 0;">Gestão de Cardápio</h1>
                     <p style="font-size: 13px; margin: 0; color: var(--text-muted);">Adicione lanches e ingredientes para o site.</p>
                 </div>
-                <button onclick="compartilharCardapio()" class="btn-header-action" style="padding: 8px 16px; font-size: 13px;">
-                    <span class="material-symbols-outlined" style="font-size: 18px;">share</span> Compartilhar
-                </button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="abrirModalAdicionais()" class="btn-header-action" style="background: var(--soft-blue); color: var(--text-blue); border: 1px solid rgba(56, 139, 253, 0.3);">
+                        <span class="material-symbols-outlined">add_circle</span> Gerir Adicionais
+                    </button>
+                    <button onclick="compartilharCardapio()" class="btn-header-action" style="padding: 8px 16px; font-size: 13px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">share</span> Compartilhar
+                    </button>
+                </div>
             </header>
 
             <div class="cardapio-container">
@@ -180,15 +180,19 @@
                             <span style="font-size: 11px; color: var(--text-muted);">*Se usar tamanhos, coloque o Preço Base do lanche como 0 lá em cima.</span>
                         </div>
 
-                        <div class="builder-box">
-                            <label style="font-size: 12px; color: var(--text-green); display: block; margin-bottom: 8px;">Extras / Adicionais (Ex: Bacon, Cheddar)</label>
+                        <div class="builder-box" style="border-color: var(--text-blue); background: rgba(56, 139, 253, 0.02);">
+                            <label style="font-size: 12px; color: var(--text-blue); display: block; margin-bottom: 8px; font-weight: bold;">👨‍🍳 FICHA TÉCNICA (GASTA NO ESTOQUE COZINHA)</label>
                             <div class="linha-add">
-                                <input type="text" id="in-add-nome" class="input-padrao" placeholder="Ex: Bacon Extra" style="padding: 6px; flex: 2;">
-                                <input type="number" id="in-add-preco" class="input-padrao" placeholder="R$" style="padding: 6px; flex: 1;">
-                                <button onclick="adicionarAdicionalTemp()" style="background: var(--text-green); color: white; border: none; border-radius: 4px; padding: 0 15px; cursor:pointer; font-weight: bold;">+</button>
+                                <select id="in-receita-insumo" class="input-padrao" style="padding: 6px; flex: 2;">
+                                    <option value="">Selecione um insumo...</option>
+                                </select>
+                                <input type="number" id="in-receita-qtd" class="input-padrao" placeholder="Qtd" style="padding: 6px; flex: 0.8;">
+                                <button onclick="adicionarInsumoReceita()" style="background: var(--text-blue); color: black; border: none; border-radius: 4px; padding: 0 15px; cursor:pointer; font-weight: bold;">+</button>
                             </div>
-                            <div id="box-adicionais-temp" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
+                            <div id="box-receita-temp" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
+                            <span style="font-size: 10px; color: var(--text-muted);">* Ex: 1 Pão, 2 Salsichas...</span>
                         </div>
+
                         <div style="display: flex; gap: 10px; margin-top: 20px;">
                             <button id="btn-salvar-lanche" class="btn-salvar-lanche" onclick="salvarNovoLanche()">✅ Publicar no Site</button>
                             
@@ -211,122 +215,86 @@
         </div>
 
         <div id="tela-motoboys" class="tela">
-            <header style="border-bottom: none; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <header style="border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; padding: 12px 30px;">
                 <div class="header-title">
-                    <h1>Gestão de Motoboys</h1>
-                    <p>Cadastre os entregadores e defina a taxa de entrega.</p>
+                    <h1 style="font-size: 18px; margin: 0;">Gestão de Logística</h1>
+                    <p style="font-size: 12px; margin: 0; color: var(--text-muted);">Controle entregadores e taxas.</p>
                 </div>
                 
-                <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                    <div style="background: var(--bg-main); padding: 10px 20px; border-radius: 12px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px;">
-                        <span style="font-size: 13px; color: var(--text-muted); font-weight: bold;">🎁 ENTREGA GRÁTIS GERAL:</span>
-                        <label class="ios-switch">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="background: var(--soft-orange); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(210, 153, 34, 0.15); display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; color: var(--text-orange); font-weight: 800; text-transform: uppercase;">Entrega Grátis:</span>
+                        <label class="ios-switch" style="transform: scale(0.7); transform-origin: right;">
                             <input type="checkbox" id="switch-entrega-gratis" onchange="toggleEntregaGratis()">
                             <span class="ios-slider"></span>
                         </label>
                     </div>
-
-                    <button onclick="compartilharAppMotoboy()" class="btn-salvar-lanche" style="width: auto; padding: 10px 20px; background: var(--text-green); border-color: var(--text-green); color: #000; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold;">
-                        🔗 Compartilhar App
+                    <button onclick="compartilharAppMotoboy()" class="btn-header-action" style="background: var(--text-green); color: black; padding: 6px 12px; font-size: 12px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">share</span> App Motoboy
                     </button>
                 </div>
             </header>
 
-            <div style="padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 30px; height: 100%;">
+            <div class="cardapio-container" style="padding: 15px; gap: 15px; overflow-y: auto; display: block;">
                 
-                <div style="display: flex; gap: 30px; min-height: 380px;">
-                    <div class="painel-form" style="height: 100%;">
-                        <div class="painel-header">
-                            <h3 id="titulo-form-motoboy" style="color: white; font-size: 16px;">👤 Novo Motoboy</h3>
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 15px; margin-bottom: 25px; align-items: start;">
+                    <div class="painel-form" style="width: 100%; min-width: unset; flex: none;">
+                        <div class="painel-header" style="background: transparent; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 15px;">
+                            <h3 style="color: white; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="color: var(--text-blue); font-size: 18px;">person_add</span> Novo Entregador
+                            </h3>
                         </div>
-                        <div class="painel-body">
-                            <div class="input-group">
-                                <label>Nome Completo</label>
-                                <input type="text" id="moto-nome" class="input-padrao" placeholder="Ex: Carlos Oliveira">
+                        <div class="painel-body" style="padding: 12px; gap: 8px; display: flex; flex-direction: column;">
+                            <div class="input-group" style="margin-bottom: 5px;">
+                                <label style="font-size: 10px;">Nome Completo</label>
+                                <input type="text" id="moto-nome" class="input-padrao" placeholder="Ex: Carlos" style="padding: 8px; font-size: 13px;">
                             </div>
-                            <div class="input-group">
-                                <label>Telefone / WhatsApp</label>
-                                <input type="text" id="moto-fone" class="input-padrao" placeholder="(00) 00000-0000">
+                            <div class="input-group" style="margin-bottom: 5px;">
+                                <label style="font-size: 10px;">WhatsApp (Senha)</label>
+                                <input type="text" id="moto-fone" class="input-padrao" placeholder="(00) 00000-0000" style="padding: 8px; font-size: 13px;">
                             </div>
-                            <div class="input-group">
-                                <label>Placa do Veículo (Opcional)</label>
-                                <input type="text" id="moto-placa" class="input-padrao" placeholder="ABC-1234">
-                            </div>
-
-                            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                                <button id="btn-salvar-motoboy" class="btn-salvar-lanche" onclick="salvarMotoboy()">✅ Autorizar Motoboy</button>
-                                <button id="btn-cancelar-moto" class="btn-salvar-lanche" onclick="limparFormMotoboy()" style="display: none; background: transparent; color: var(--text-muted); border-color: var(--border-color); flex: 0.5;">Cancelar</button>
-                            </div>
+                            <button class="btn-salvar-lanche" onclick="salvarMotoboy()" style="padding: 10px; font-size: 13px; background: var(--soft-blue); color: var(--text-blue);">✅ Autorizar</button>
                         </div>
                     </div>
 
-                    <div class="painel-lista" style="height: 100%;">
-                        <div class="painel-header">
-                            <h3 style="color: white; font-size: 16px;">🛵 Entregadores Ativos</h3>
+                    <div class="painel-lista" style="background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); align-self: stretch; min-height: 150px;">
+                        <div class="painel-header" style="background: transparent; padding: 10px 15px;">
+                            <h3 style="color: white; font-size: 13px;">🛵 Entregadores Ativos</h3>
                         </div>
-                        <div id="grid-motoboys" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: calc(100% - 60px);">
+                        <div id="grid-motoboys" style="padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; align-content: start;">
                         </div>
                     </div>
                 </div>
 
-                <div style="border-top: 1px dashed #444; margin: 10px 0;"></div>
-
-                <div style="display: flex; gap: 30px; min-height: 450px; padding-bottom: 50px;">
-                    <div class="painel-form" style="height: 100%;">
-                        <div class="painel-header">
-                            <h3 style="color: white; font-size: 16px;">📍 Cadastrar Bairro</h3>
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 15px; align-items: start;">
+                    <div class="painel-form" style="width: 100%; min-width: unset; flex: none;">
+                        <div class="painel-header" style="background: transparent; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 10px 15px;">
+                            <h3 style="color: white; font-size: 13px; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="color: var(--text-orange); font-size: 18px;">add_location</span> Nova Área
+                            </h3>
                         </div>
-                        <div class="painel-body">
-                            <div class="input-group">
-                                <label>Nome do Bairro</label>
-                                <input type="text" id="bairro-nome" class="input-padrao" placeholder="Ex: Centro">
+                        <div class="painel-body" style="padding: 12px; gap: 8px; display: flex; flex-direction: column;">
+                            <div class="input-group" style="margin-bottom: 5px;">
+                                <label style="font-size: 10px;">Nome do Bairro</label>
+                                <input type="text" id="bairro-nome" class="input-padrao" placeholder="Ex: Centro" style="padding: 8px; font-size: 13px;">
                             </div>
-                            <div class="input-group">
-                                <label>Taxa de Entrega (R$)</label>
-                                <input type="number" id="bairro-taxa" class="input-padrao" placeholder="0.00 (0 para Grátis)">
+                            <div class="input-group" style="margin-bottom: 5px;">
+                                <label style="font-size: 10px;">Taxa (R$)</label>
+                                <input type="number" id="bairro-taxa" class="input-padrao" placeholder="0.00" style="padding: 8px; font-size: 13px;">
                             </div>
-                            <button class="btn-salvar-lanche" onclick="salvarBairro()" style="margin-top: 20px;">✅ Salvar Bairro</button>
+                            <button class="btn-salvar-lanche" onclick="salvarBairro()" style="padding: 10px; font-size: 13px; background: var(--soft-orange); color: var(--text-orange);">✅ Salvar Bairro</button>
                         </div>
                     </div>
 
-                    <div class="painel-lista" style="height: 100%;">
-                        <div class="painel-header">
-                            <h3 style="color: white; font-size: 16px;">🗺️ Bairros e Taxas Ativas</h3>
+                    <div class="painel-lista" style="background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); align-self: stretch; min-height: 150px;">
+                        <div class="painel-header" style="background: transparent; padding: 10px 15px;">
+                            <h3 style="color: white; font-size: 13px;">📍 Áreas de Atendimento</h3>
                         </div>
-                        <div id="grid-bairros" style="padding: 20px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; height: calc(100% - 60px);">
-                            </div>
+                        <div id="grid-bairros" style="padding: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; align-content: start;">
+                        </div>
                     </div>
                 </div>
 
-            </div>
-        </div>
-
-        <div id="tela-estoque" class="tela">
-            <header style="border-bottom: 1px solid var(--border-color);">
-                <div class="header-title">
-                    <h1>Controle de Estoque</h1>
-                    <p>Gerencie a quantidade física das suas bebidas, porções e itens limitados.</p>
-                </div>
-            </header>
-            <div class="cardapio-container" style="overflow-y: auto;">
-                <div class="painel-lista" style="width: 100%; height: fit-content;">
-                    <div class="painel-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                        <h3 style="color: white; font-size: 16px;">📦 Estoque de Produtos no Site</h3>
-                        <select id="filtro-categoria-estoque" onchange="filtrarEstoque()" class="input-padrao" style="width: auto; max-width: 220px; padding: 8px 12px; background: var(--bg-main); font-weight: bold; cursor: pointer;">
-                            <option value="todas">🧾 Todas as Categorias</option>
-                            <option value="Hamburguers">🍔 Hamburguers</option>
-                            <option value="Sanduíches">🥪 Sanduíches</option>
-                            <option value="Porções">🍟 Porções</option>
-                            <option value="Bebidas">🥤 Bebidas</option>
-                            <option value="Sobremesas">🍦 Sobremesas</option>
-                        </select>
-                    </div>
-                    <div style="padding: 20px;">
-                        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Deixe a caixinha em branco se o produto for infinito (ex: Lanches feitos na hora).</p>
-                        <div id="grid-estoque" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 15px;">
-                            </div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -436,6 +404,91 @@
 
     <!-- ÁREA DE IMPRESSÃO DA COMANDA (SÓ APARECE NO PAPEL) -->
     <div id="area-impressao" style="display: none;"></div>
+
+    <div class="modal-manual-overlay" id="modalAdicionais">
+        <div class="modal-manual-content" style="max-width: 600px; min-height: 60vh;">
+            <div class="modal-manual-header">
+                <h2 style="color: white; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                    <span class="material-symbols-outlined" style="color: var(--text-green);">add_box</span> 
+                    Tabela de Adicionais Globais
+                </h2>
+                <button class="btn-fechar-modal" onclick="fecharModalAdicionais()">&times;</button>
+            </div>
+            <div class="cardapio-container" style="display: flex; flex-direction: column; padding: 20px; flex: 1;">
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Os itens abaixo aparecerão automaticamente como extras em <strong>todos os lanches</strong> do cardápio.</p>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px;">
+                    <input type="text" id="novo-add-nome" class="input-padrao" placeholder="Ex: Bacon Extra" style="flex: 2;">
+                    <input type="number" id="novo-add-preco" class="input-padrao" placeholder="R$ 5,00" style="flex: 1;">
+                    <button onclick="cadastrarAdicionalGlobal()" style="background: var(--text-green); color: black; border: none; border-radius: 6px; font-weight: bold; padding: 0 15px; cursor: pointer;">Cadastrar</button>
+                </div>
+
+                <div id="grid-adicionais-global" style="display: flex; flex-direction: column; gap: 8px; overflow-y: auto; flex: 1;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-manual-overlay" id="modalEstoque">
+        <div class="modal-manual-content" style="max-width: 950px; min-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-manual-header">
+                <h2 style="color: white; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                    <span class="material-symbols-outlined" style="color: var(--text-blue);">inventory_2</span> 
+                    Gerenciar Disponibilidade (Estoque)
+                </h2>
+                <button class="btn-fechar-modal" onclick="fecharModalEstoque()">&times;</button>
+            </div>
+            
+            <div class="cardapio-container" style="display: flex; flex-direction: column; padding: 15px 25px; flex: 1; overflow: hidden;">
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 20px; background: rgba(0,0,0,0.15); padding: 10px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03);">
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.4;">
+                        <span class="material-symbols-outlined" style="font-size: 15px; vertical-align: middle; color: var(--text-orange); margin-right: 5px;">info</span>
+                        <strong>Lanches:</strong> Use o botão para ativar/desativar no site. <br>
+                        <strong>Bebidas/Sobremesas:</strong> Defina a quantidade (Vazio = infinito).
+                    </p>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span class="material-symbols-outlined" style="color: var(--text-muted);">filter_list</span>
+                        <select id="filtro-categoria-estoque" onchange="filtrarEstoque()" class="input-padrao" style="width: auto; min-width: 200px; background: var(--bg-main);">
+                            <option value="todas">🧾 Todas as Categorias</option>
+                            <option value="Hamburguers">🍔 Hamburguers</option>
+                            <option value="Sanduíches">🥪 Sanduíches</option>
+                            <option value="Porções">🍟 Porções</option>
+                            <option value="Bebidas">🥤 Bebidas</option>
+                            <option value="Sobremesas">🍦 Sobremesas</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="grid-estoque" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; overflow-y: auto; padding-right: 10px; flex: 1;">
+                    </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-manual-overlay" id="modalCozinha">
+        <div class="modal-manual-content" style="max-width: 800px; min-height: 70vh;">
+            <div class="modal-manual-header">
+                <h2 style="color: white; display: flex; align-items: center; gap: 10px; font-size: 18px;">
+                    <span class="material-symbols-outlined" style="color: var(--text-orange);">kitchen</span> 
+                    Insumos e Matéria-Prima
+                </h2>
+                <button class="btn-fechar-modal" onclick="fecharModalCozinha()">&times;</button>
+            </div>
+            
+            <div class="cardapio-container" style="display: flex; flex-direction: column; padding: 20px; flex: 1;">
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03);">
+                    <input type="text" id="novo-insumo-nome" class="input-padrao" placeholder="Ex: Salsicha (Unid)" style="flex: 2;">
+                    <input type="number" id="novo-insumo-qtd" class="input-padrao" placeholder="Qtd Inicial" style="flex: 1;">
+                    <button onclick="cadastrarNovoInsumo()" style="background: var(--text-orange); color: black; border: none; border-radius: 6px; font-weight: bold; padding: 0 20px; cursor: pointer;">+ Adicionar</button>
+                </div>
+
+                <div id="grid-insumos" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; overflow-y: auto; flex: 1; padding-right: 5px; align-content: start;">
+                    </div>
+            </div>
+        </div>
+    </div>
 
 <div class="modal-manual-overlay" id="modalManual">
         <div class="modal-manual-content">

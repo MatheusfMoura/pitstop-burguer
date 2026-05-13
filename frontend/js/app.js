@@ -205,14 +205,14 @@ window.abrirModalProduto = function(id) {
         listaAdicionais.innerHTML = htmlOpcoes;
     }
 
-    // --- ADICIONAIS (MÚLTIPLA ESCOLHA) ---
-    if(produtoSelecionado.adicionais && produtoSelecionado.adicionais.length > 0) {
-        listaAdicionais.innerHTML += `<h4 style="margin-bottom: 12px; color: #fff; border-top: 1px solid #333; pt-15px; margin-top: 10px;">Adicionais</h4>`;
-        produtoSelecionado.adicionais.forEach((add, index) => {
+    // --- ADICIONAIS GLOBAIS (AUTOMÁTICOS PARA TODOS OS LANCHES) ---
+    if(window.adicionaisGlobaisMemoria && window.adicionaisGlobaisMemoria.length > 0) {
+        listaAdicionais.innerHTML += `<h4 style="margin-bottom: 12px; color: #fff; border-top: 1px solid #333; padding-top: 15px; margin-top: 10px;">Turbine seu Lanche</h4>`;
+        window.adicionaisGlobaisMemoria.forEach((add, index) => {
             listaAdicionais.innerHTML += `
                 <div class="item-adicional" style="margin-bottom: 8px;">
-                    <label for="add-${index}">${add.nome} (+ R$ ${add.preco.toFixed(2).replace('.',',')})</label>
-                    <input type="checkbox" id="add-${index}" data-preco="${add.preco}" data-nome="${add.nome}" onchange="atualizarPrecoModal()">
+                    <label for="add-global-${index}">${add.nome} (+ R$ ${add.preco.toFixed(2).replace('.',',')})</label>
+                    <input type="checkbox" id="add-global-${index}" data-preco="${add.preco}" data-nome="${add.nome}" onchange="atualizarPrecoModal()">
                 </div>`;
         });
     }
