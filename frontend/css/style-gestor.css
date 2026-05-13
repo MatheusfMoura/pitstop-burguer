@@ -1,7 +1,7 @@
 /* ==========================================
-    1. VARIÁVEIS E BASE (Soft UI Dark Mode)
+    1. VARIÁVEIS E BASE (Soft UI Dark/Light Mode)
 ========================================== */
-:root {
+:root, [data-theme="dark"] {
     --bg-main: #0d1117; --bg-sidebar: #161b22; --bg-card: #21262d; --bg-hover: #30363d;
     --text-main: #c9d1d9; --text-muted: #8b949e; --border-color: #30363d;
     --soft-red: rgba(248, 81, 73, 0.15); --text-red: #ff7b72;
@@ -9,6 +9,11 @@
     --soft-blue: rgba(56, 139, 253, 0.15); --text-blue: #79c0ff;
     --soft-green: rgba(46, 160, 67, 0.15); --text-green: #56d364;
     --soft-purple: rgba(163, 113, 247, 0.15); --text-purple: #d2a8ff;
+}
+
+[data-theme="light"] {
+    --bg-main: #f0f2f5; --bg-sidebar: #ffffff; --bg-card: #ffffff; --bg-hover: #e4e6e9;
+    --text-main: #1c1e21; --text-muted: #65676b; --border-color: #ccd0d5;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
@@ -335,7 +340,7 @@ input:checked + .ios-slider:before {
 
 .pdv-item-txt strong {
     display: block;
-    color: white;
+    color: var(--text-main);
     font-size: 14px;
     margin-bottom: 2px;
 }
@@ -423,56 +428,53 @@ input:checked + .ios-slider:before {
 }
 
 /* ==========================================
-   VISUAL PREMIUM DO MODAL (SEM BORDAS GROSSAS E MAIS FLUIDO)
+   VISUAL PREMIUM DO MODAL (TEMAS DINÂMICOS)
 ========================================== */
 .modal-manual-content {
-    background: linear-gradient(145deg, #161b22, #0d1117) !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    box-shadow: 0 25px 50px rgba(0,0,0,0.9) !important;
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3) !important;
 }
 
 .modal-manual-header {
     background: transparent !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-    padding: 10px 25px !important; /* Reduzimos a altura pela metade! */
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: 10px 25px !important;
 }
 
-/* Remove a borda laranja e fundos secos */
 .modal-manual-content .painel-form {
-    background: rgba(0,0,0,0.15) !important;
-    border: 1px solid rgba(255,255,255,0.04) !important;
+    background: var(--bg-sidebar) !important;
+    border: 1px solid var(--border-color) !important;
     border-radius: 12px;
 }
 
-/* Deixa o campo de selecionar lanche mais elegante */
 .custom-select-trigger {
-    background: rgba(0,0,0,0.3) !important;
-    border: 1px solid rgba(255,255,255,0.08) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
     padding: 12px 15px !important;
     font-size: 15px;
     border-radius: 8px !important;
 }
 
-/* O Menu Suspenso Efeito Vidro (Glassmorphism) */
 .custom-select-panel {
-    background: rgba(22, 27, 34, 0.95) !important;
+    background: var(--bg-card) !important;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.95) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
     border-radius: 12px !important;
-    max-height: 320px !important; /* Maior aproveitamento da tela */
+    max-height: 320px !important; 
 }
 
 .custom-select-search {
     background: transparent !important;
-    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid var(--border-color) !important;
     padding: 12px !important;
 }
 
 .custom-select-search input {
-    background: rgba(0,0,0,0.4) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
+    background: var(--bg-main) !important;
+    border: 1px solid var(--border-color) !important;
     padding: 12px 15px !important;
     font-size: 15px !important;
     border-radius: 6px !important;
@@ -480,11 +482,12 @@ input:checked + .ios-slider:before {
 
 .custom-option {
     padding: 12px 15px !important;
-    border-bottom: 1px solid rgba(255,255,255,0.02) !important;
+    border-bottom: 1px solid var(--border-color) !important;
 }
 
 .custom-option:hover {
-    background: rgba(56, 139, 253, 0.12) !important;
+    background: var(--bg-hover) !important;
+    color: var(--text-blue) !important;
 }
 
 /* ==========================================
@@ -516,17 +519,17 @@ input:checked + .ios-slider:before {
     flex: 0.8;
     min-width: 350px;
     max-width: 420px;
-    background: linear-gradient(145deg, #161b22, #0d1117);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    background: var(--bg-sidebar) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
 /* Dá o espaço máximo à lista de lanches */
 #tela-cardapio .painel-lista {
     flex: 2.2;
-    background: rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
 }
 
 /* Redimensiona a grelha para caberem 3 ou 4 lanches por linha (Aproveitamento total!) */
@@ -538,25 +541,25 @@ input:checked + .ios-slider:before {
 
 /* Cartões de Lanche mais elegantes, compactos e com efeito flutuante */
 .card-produto-real {
-    background: linear-gradient(145deg, var(--bg-sidebar), #05070a) !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
     border-radius: 12px;
     min-height: 310px !important;
     transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     cursor: pointer;
 }
 
 .card-produto-real:hover {
     transform: translateY(-6px);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.6);
-    border-color: rgba(121, 192, 255, 0.4) !important; /* Brilho azul ao passar o rato */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    border-color: var(--text-blue) !important; 
 }
 
 /* Foto um pouco menor para não roubar a tela toda */
 .img-produto {
     height: 130px !important; 
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid var(--border-color) !important;
 }
 
 .conteudo-produto {
@@ -567,7 +570,7 @@ input:checked + .ios-slider:before {
 .desc-produto {
     display: -webkit-box;
     -webkit-line-clamp: 3;
-    line-clamp: 3; /* Resolve o aviso de compatibilidade do VS Code */
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -575,7 +578,7 @@ input:checked + .ios-slider:before {
 /* Remove o fundo sólido dos cabeçalhos para o degradê aparecer perfeitamente (Mais fino) */
 #tela-cardapio .painel-header {
     background: transparent;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-color) !important;
     padding: 10px 20px; /* Reduzimos de 20px para 10px para espremer a barra! */
 }
 
@@ -583,9 +586,119 @@ input:checked + .ios-slider:before {
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
     -webkit-appearance: none;
+    appearance: none;
     margin: 0;
 }
 
 input[type=number] {
     -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+/* ==========================================
+   ⚖️ FIX DE COMPATIBILIDADE (ANTI-ENGESSAMENTO)
+   Remove cores fixas e obriga a respeitar o Tema
+========================================== */
+
+/* 1. Títulos e Textos Fortes (Remove o 'white' engessado) */
+h1, h2, h3, h4, h5, h6, strong, label, p {
+    color: var(--text-main) !important;
+}
+
+/* 2. Barra Lateral (Sidebar) */
+.sidebar {
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid var(--border-color) !important;
+}
+
+/* 3. Modais (Estoque, Adicionais, Cozinha) */
+.modal-manual-content {
+    background-color: var(--bg-main) !important;
+    border: 1px solid var(--border-color) !important;
+}
+.modal-manual-header {
+    border-bottom: 1px solid var(--border-color) !important;
+}
+
+/* 4. Painéis (PDV e Logística) */
+.painel-lista, .painel-form, .painel-body, .painel-footer {
+    background-color: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 5. Cartões do Cardápio */
+.card-produto-real {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 6. Kanban (Cozinha KDS) */
+.coluna-kds {
+    background-color: var(--bg-sidebar) !important;
+    border-color: var(--border-color) !important;
+}
+.pedido-card {
+    background-color: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* 7. Inputs, Caixas de Texto e Filtros (Remove fundos pretos transparentes) */
+.input-padrao, select, textarea, input[type="text"], input[type="number"] {
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* 8. Resolve os fundos inline (rgba) nos itens do PDV */
+div[style*="background: rgba(0,0,0,"] {
+    background-color: var(--bg-hover) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* ==========================================
+   🛡️ BLINDAGEM DO TEMA CLARO (ANTI-ENGESSAMENTO)
+   Esta regra caça cores fixas no HTML e inverte-as magicamente!
+========================================== */
+
+/* 1. Caça textos brancos e classes engessadas e força-os a ficar escuros no tema claro */
+[data-theme="light"] [style*="color: white"],
+[data-theme="light"] [style*="color:white"],
+[data-theme="light"] [style*="color: #fff"],
+[data-theme="light"] [style*="color:#fff"],
+[data-theme="light"] .opt-nome,
+[data-theme="light"] .titulo-produto,
+[data-theme="light"] .card-client {
+    color: var(--text-main) !important;
+}
+
+/* 2. Caça fundos pretos transparentes e transforma-os em cinza claro */
+[data-theme="light"] [style*="background: rgba(0,0,0"],
+[data-theme="light"] [style*="background: rgba(0, 0, 0"] {
+    background-color: var(--bg-hover) !important;
+    border-color: var(--border-color) !important;
+}
+
+/* 3. Caça hover de botões (fundo branco transparente) e escurece-os */
+[data-theme="light"] [style*="background: rgba(255,255,255,0.05)"],
+[data-theme="light"] [style*="background:rgba(255,255,255,0.05)"] {
+    background-color: rgba(0,0,0,0.05) !important;
+}
+
+/* 4. Corrige caixas de digitar e seletores que ficaram encravados */
+[data-theme="light"] .input-padrao, 
+[data-theme="light"] select, 
+[data-theme="light"] textarea, 
+[data-theme="light"] input[type="text"], 
+[data-theme="light"] input[type="number"],
+[data-theme="light"] input[type="password"] {
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+/* 5. Garante que as bordas da tela de login e painéis não fiquem invisíveis */
+[data-theme="light"] .painel-lista,
+[data-theme="light"] .painel-form,
+[data-theme="light"] #tela-login-gestor > div {
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
 }

@@ -239,6 +239,16 @@ window.salvarEstoqueProduto = async function(idFirebase) {
     } catch(e) { alert("Erro ao salvar estoque: " + e); }
 }
 
+// Verifica se deve mostrar a caixa de Tamanhos baseando-se na Categoria
+window.verificarCategoriaTamanhos = function() {
+    const categoria = document.getElementById('form-categoria').value;
+    const boxTamanhos = document.getElementById('box-builder-tamanhos');
+    if(boxTamanhos) {
+        // Se a categoria for "Porções", mostra a caixa. Senão, esconde!
+        boxTamanhos.style.display = (categoria === 'Porções') ? 'block' : 'none';
+    }
+}
+
 window.editarProdutoReal = function(docId) {
     const prod = produtosNoBanco.find(p => p.idFirebase === docId);
     if(!prod) return;
@@ -249,6 +259,7 @@ window.editarProdutoReal = function(docId) {
     document.getElementById('form-preco').value = prod.preco || '';
     document.getElementById('form-img').value = prod.imagem || '';
     document.getElementById('form-categoria').value = prod.categoria || 'Hamburguers';
+    window.verificarCategoriaTamanhos(); // <--- Gatilho Automático!
 
     tempIngredientes = prod.ingredientes ? [...prod.ingredientes] : [];
     tempAdicionais = prod.adicionais ? [...prod.adicionais] : [];
@@ -266,6 +277,7 @@ window.cancelarEdicao = function() {
     idLancheEmEdicao = null;
     
     document.getElementById('form-categoria').value = 'Hamburguers';
+    window.verificarCategoriaTamanhos(); // <--- Gatilho Automático!
     document.getElementById('form-nome').value = '';
     document.getElementById('form-preco').value = '';
     document.getElementById('form-img').value = '';
@@ -1262,7 +1274,8 @@ window.calcularTotalPDV = function() {
 // O ENVIO FINAL PARA A COZINHA
 window.salvarPedidoManual = async function() {
     const nome = document.getElementById('manual-nome').value.trim();
-    const whats = document.getElementById('manual-whats').value.trim();
+    const campoWhats = document.getElementById('manual-whats');
+    const whats = campoWhats ? campoWhats.value.trim() : ''; // Se não existir, deixa vazio sem dar erro!
     const tipo = document.getElementById('manual-tipo').value;
     const pag = document.getElementById('manual-pag').value;
     const end = document.getElementById('manual-end').value.trim();
@@ -1296,9 +1309,12 @@ window.salvarPedidoManual = async function() {
         dataCriacao: Date.now()
     };
 
-    const btn = document.querySelector('#tela-novo-pedido .btn-salvar-lanche');
-    btn.innerText = "⏳ Imprimindo comanda...";
-    btn.disabled = true;
+    // Agora ele procura o botão dentro do Modal correto!
+    const btn = document.querySelector('#modalManual .btn-salvar-lanche');
+    if(btn) {
+        btn.innerHTML = "⏳ A processar...";
+        btn.disabled = true;
+    }
 
     try {
         // Envia para o banco
@@ -1310,7 +1326,7 @@ window.salvarPedidoManual = async function() {
 
         // Esvazia tudo para o próximo pedido
         document.getElementById('manual-nome').value = '';
-        document.getElementById('manual-whats').value = '';
+        if(document.getElementById('manual-whats')) document.getElementById('manual-whats').value = '';
         document.getElementById('manual-end').value = '';
         document.getElementById('manual-obs').value = '';
         document.getElementById('manual-taxa').value = '0.00';
@@ -1323,8 +1339,10 @@ window.salvarPedidoManual = async function() {
     } catch (e) {
         alert("Erro ao lançar pedido: " + e);
     } finally {
-        btn.innerText = "✅ Enviar para a Cozinha";
-        btn.disabled = false;
+        if(btn) {
+            btn.innerHTML = "✅ Enviar para a Cozinha";
+            btn.disabled = false;
+        }
     }
 }
 
@@ -1536,7 +1554,7 @@ window.toggleCustomSelect = function() {
 window.selecionarProdutoPDV = function(idFirebase, nomeLanche) {
     document.getElementById('pdv-produto-hidden').value = idFirebase;
     document.getElementById('pdv-select-text').innerText = nomeLanche;
-    document.getElementById('pdv-select-text').style.color = "white";
+    document.getElementById('pdv-select-text').style.color = "var(--text-main)";
     document.getElementById('pdv-select-panel').classList.remove('open');
     
     // Remove a classe 'selected' de todos e adiciona no clicado
@@ -1559,13 +1577,59 @@ window.filtrarCustomSelect = function() {
     });
 }
 
-// Fecha o select se clicar fora dele para não atrapalhar a tela
+// Fecha menus suspensos se clicar fora deles para não atrapalhar a tela
 document.addEventListener('click', function(event) {
+    // Fecha o select customizado do PDV
     const selectWrapper = document.getElementById('pdv-custom-select');
     if (selectWrapper && !selectWrapper.contains(event.target)) {
         const panel = document.getElementById('pdv-select-panel');
         if(panel) panel.classList.remove('open');
     }
+
+    // Fecha o menu de temas da sidebar
+    const menuTemas = document.getElementById('menu-temas');
+    if (menuTemas && menuTemas.style.display === 'block' && !menuTemas.contains(event.target)) {
+        menuTemas.style.display = 'none';
+    }
+});
+
+// ==========================================
+// 🌗 GESTÃO DE TEMAS (LIGHT/DARK/AUTO)
+// ==========================================
+window.alternarTemaMenu = (event) => {
+    if(event) event.stopPropagation();
+    const menu = document.getElementById('menu-temas');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+};
+
+window.setTema = (tema) => {
+    localStorage.setItem('tema_preferido', tema);
+    aplicarTema(tema);
+    document.getElementById('menu-temas').style.display = 'none';
+};
+
+function aplicarTema(tema) {
+    const html = document.documentElement;
+    const icone = document.getElementById('icone-tema');
+    if(!icone) return;
+
+    if (tema === 'auto') {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        icone.innerText = 'settings_brightness';
+    } else {
+        html.setAttribute('data-theme', tema);
+        icone.innerText = tema === 'light' ? 'light_mode' : 'dark_mode';
+    }
+}
+
+// Inicializa o tema ao carregar a página
+const temaSalvo = localStorage.getItem('tema_preferido') || 'dark';
+aplicarTema(temaSalvo);
+
+// Ouve mudanças no sistema em tempo real se estiver em modo 'auto'
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (localStorage.getItem('tema_preferido') === 'auto') aplicarTema('auto');
 });
 
 // ==========================================
