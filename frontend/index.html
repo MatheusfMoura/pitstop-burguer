@@ -519,8 +519,8 @@
                 });
             }
 
-            // Exibir a taxa de entrega separadamente se for delivery (Valor fixo da taxa minima da entrega)
-            if (dadosDoPedidoAtual.tipo === "entrega" && dadosDoPedidoAtual.taxaEntrega && dadosDoPedidoAtual.taxaEntrega !== "R$ 5,00") {
+            // Exibir a taxa de entrega separadamente se for delivery (Ignora apenas se for zero ou grátis)
+            if (dadosDoPedidoAtual.tipo === "entrega" && dadosDoPedidoAtual.taxaEntrega && dadosDoPedidoAtual.taxaEntrega !== "R$ 0,00" && dadosDoPedidoAtual.taxaEntrega !== "GRÁTIS") {
                 listaHTML.innerHTML += `
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px; margin-top: 5px; border-top: 1px dashed #333; padding-top: 8px;">
                         <span style="color: #aaa;">Taxa de Entrega</span>

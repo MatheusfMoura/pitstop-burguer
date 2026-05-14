@@ -405,8 +405,8 @@ window.atualizarSelectInsumosNoLanche = function() {
     const select = document.getElementById('in-receita-insumo');
     if(!select) return;
     select.innerHTML = '<option value="">Selecione um insumo...</option>';
-    if (typeof insumosNaMemoria !== 'undefined') {
-        insumosNaMemoria.forEach(ins => {
+    if (window.insumosNaMemoria && window.insumosNaMemoria.length > 0) {
+        window.insumosNaMemoria.forEach(ins => {
             select.innerHTML += `<option value="${ins.id}">${ins.nome}</option>`;
         });
     }
@@ -1758,11 +1758,11 @@ window.salvarEstoqueItem = async function(idFirebase, inputElement) {
 // ==========================================
 // 🍳 MÓDULO DE ESTOQUE DE COZINHA (INSUMOS)
 // ==========================================
-let insumosNaMemoria = [];
+window.insumosNaMemoria = [];
 
 // 1. Escuta o Firebase para atualizar a lista de insumos em tempo real
 onSnapshot(collection(db, "insumos"), (snapshot) => {
-    insumosNaMemoria = [];
+    window.insumosNaMemoria = [];
     const grid = document.getElementById('grid-insumos');
     if(!grid) return;
     grid.innerHTML = '';
