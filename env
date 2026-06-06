@@ -1,0 +1,2 @@
+PORTA=3000
+URL_BANCO_DE_DADOS=mongodb+srv://figueiredomattheus_db_user:qwe123@cluster0.ckbrj8g.mongodb.net/pitstop_burguer?retryWrites=true&w=majority

@@ -1,9 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
+const path = require('path');
 
-// Pega o "Crachá VIP" que renomeamos
-const serviceAccount = require('./firebase-key.json');
+const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT
+  ? path.resolve(process.cwd(), process.env.FIREBASE_SERVICE_ACCOUNT)
+  : path.join(__dirname, '..', 'firebase-key.json');
+const serviceAccount = require(serviceAccountPath);
 
 // Inicializa o Firebase
 admin.initializeApp({

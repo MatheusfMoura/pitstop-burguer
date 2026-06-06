@@ -1,21 +1,33 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, setDoc, getDocs, where, increment } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, addDoc, deleteDoc, setDoc, getDocs, where, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
-const firebaseConfig = {
-    apiKey: "AIzaSyCUjBWv40J0Mp6KsHzWxOwz6hNyWDHOYT8",
-    authDomain: "pitstop-burguer.firebaseapp.com",
-    projectId: "pitstop-burguer",
-    storageBucket: "pitstop-burguer.firebasestorage.app",
-    messagingSenderId: "749099939746",
-    appId: "1:749099939746:web:1716fc96eb83bb1f7724fb"
-};
-
-const app = initializeApp(firebaseConfig);
+const app = getApp();
 const db = getFirestore(app);
 const storage = getStorage(app); 
-const auth = getAuth(app);
+
+const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+}[char]));
+const escapeAttr = escapeHTML;
+const safeHttpUrl = (value, fallback = 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png') => {
+    try {
+        const url = new URL(String(value ?? ''), window.location.origin);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : fallback;
+    } catch {
+        return fallback;
+    }
+};
+const safeNumber = (value, fallback = 0) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+};
+const jsArg = (value) => escapeAttr(JSON.stringify(String(value ?? '')));
+const stripPersonalizado = (value) => String(value ?? '').replace(' (Personalizado)', '');
 
 // ==========================================
 // 🧹 FAXINA DE IDs (RESOLVE O CONFLITO DO MODAL)
@@ -25,53 +37,6 @@ const auth = getAuth(app);
 const telaAntiga = document.getElementById('tela-novo-pedido');
 if (telaAntiga) {
     telaAntiga.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
-}
-
-// ==========================================
-// SISTEMA DE LOGIN CRIPTOGRAFADO (FIREBASE)
-// ==========================================
-
-// O Firebase fica vigiando: Se o token do Google for válido, ele libera. Se não, trava a tela!
-onAuthStateChanged(auth, (user) => {
-    const telaLogin = document.getElementById('tela-login-gestor');
-    if(telaLogin) {
-        if (user) {
-            telaLogin.style.display = 'none'; // Esconde a tela de login
-        } else {
-            telaLogin.style.display = 'flex'; // Força a tela de login a aparecer
-        }
-    }
-});
-
-window.entrarGestor = async function() {
-    // Pega o e-mail que deixamos escondido no HTML
-    const email = document.getElementById('email-gestor').value.trim();
-    const senha = document.getElementById('senha-gestor').value;
-    const btn = document.querySelector('#tela-login-gestor button');
-    
-    if(!senha) return alert("Preencha a sua senha!");
-    
-    btn.innerText = "⏳ Desbloqueando...";
-    btn.disabled = true;
-
-    try {
-        await signInWithEmailAndPassword(auth, email, senha);
-       
-    } catch(error) {
-        alert("❌ Acesso negado! Senha incorreta.");
-        document.getElementById('senha-gestor').value = ''; // Limpa a senha errada
-    } finally {
-        btn.innerText = "Desbloquear";
-        btn.disabled = false;
-    }
-}
-
-window.sairGestor = function() {
-    if(confirm("Deseja trancar o caixa e desconectar do servidor?")) {
-        signOut(auth).then(() => {
-            window.location.reload();
-        });
-    }
 }
 
 // NAVEGAÇÃO DE TELAS E PROTEÇÃO DO CAIXA
@@ -95,6 +60,72 @@ window.mudarTela = function(nomeDaTela) {
         window.carregarDashboard();
     }
 }
+
+const whatsappBotRef = doc(db, "configuracoes", "whatsappBot");
+const textosStatusWhatsApp = {
+    conectado: ['Conectado', 'var(--text-green)'],
+    aguardando_qr: ['Aguardando leitura do QR Code', 'var(--text-orange)'],
+    autenticado: ['Autenticando...', 'var(--text-blue)'],
+    iniciando: ['Iniciando...', 'var(--text-blue)'],
+    reiniciando: ['Reiniciando...', 'var(--text-orange)'],
+    desvinculando: ['Desvinculando...', 'var(--text-orange)'],
+    desconectado: ['Desconectado', 'var(--text-red)'],
+    erro_autenticacao: ['Erro de autenticação', 'var(--text-red)'],
+    erro: ['Erro', 'var(--text-red)'],
+    offline: ['Offline', 'var(--text-red)']
+};
+let ultimoStatusWhatsApp = null;
+
+function renderizarStatusWhatsApp() {
+    if(!ultimoStatusWhatsApp) return;
+    const dados = ultimoStatusWhatsApp;
+    const heartbeat = dados.heartbeatEm?.toDate ? dados.heartbeatEm.toDate() : null;
+    const heartbeatExpirado = dados.status === 'conectado'
+        && (!heartbeat || Date.now() - heartbeat.getTime() > 90000);
+    const chaveStatus = heartbeatExpirado ? 'offline' : dados.status;
+    const status = textosStatusWhatsApp[chaveStatus] || [chaveStatus || 'Desconhecido', 'var(--text-muted)'];
+    const statusEl = document.getElementById('whatsapp-bot-status');
+    const detalheEl = document.getElementById('whatsapp-bot-detalhe');
+    const qrBox = document.getElementById('whatsapp-bot-qr-box');
+    const qrImg = document.getElementById('whatsapp-bot-qr');
+
+    if(statusEl) {
+        statusEl.textContent = status[0];
+        statusEl.style.color = status[1];
+    }
+    if(detalheEl) {
+        const atualizado = dados.atualizadoEm?.toDate ? dados.atualizadoEm.toDate().toLocaleString('pt-BR') : 'aguardando atualização';
+        detalheEl.textContent = heartbeatExpirado
+            ? 'O bot parou de enviar sinais. Verifique a VPS ou reinicie o serviço.'
+            : dados.erro ? `Erro: ${dados.erro}` : `Última atualização: ${atualizado}`;
+    }
+    if(qrBox && qrImg) {
+        qrBox.style.display = dados.qrCodeDataUrl ? 'block' : 'none';
+        if(dados.qrCodeDataUrl) qrImg.src = dados.qrCodeDataUrl;
+    }
+}
+
+onSnapshot(whatsappBotRef, (snapshot) => {
+    if (!snapshot.exists()) return;
+    ultimoStatusWhatsApp = snapshot.data();
+    renderizarStatusWhatsApp();
+});
+setInterval(renderizarStatusWhatsApp, 30000);
+
+window.comandarWhatsAppBot = async function(tipo) {
+    const mensagem = tipo === 'novo_qr'
+        ? 'Isso desconectará o WhatsApp atual. Deseja gerar um novo QR Code?'
+        : 'Deseja reiniciar a conexão do bot com o WhatsApp?';
+    if(!confirm(mensagem)) return;
+
+    await setDoc(whatsappBotRef, {
+        comando: {
+            id: crypto.randomUUID(),
+            tipo,
+            criadoEm: serverTimestamp()
+        }
+    }, { merge: true });
+};
 
 // LÓGICA DO NOVO CARDÁPIO (TELA COMPLETA)
 let tempIngredientes = [];
@@ -120,21 +151,22 @@ onSnapshot(qProdutos, (snapshot) => {
         produtosNoBanco.push(prod);
         contador++;
 
-        const fotoUrl = (prod.imagem && prod.imagem.startsWith('http')) ? prod.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+        const fotoUrl = safeHttpUrl(prod.imagem);
 
         let descText = (prod.ingredientes && prod.ingredientes.length > 0) ? prod.ingredientes.join(', ') : 'Ingredientes não informados.';
         if(descText.length > 65) descText = descText.substring(0, 65) + '...';
+        const precoProduto = safeNumber(prod.preco);
 
         grid.innerHTML += `
-            <div class="card-produto-real" onclick="editarProdutoReal('${docId}')">
-                <img src="${fotoUrl}" class="img-produto" alt="Foto Lanche">
+            <div class="card-produto-real" onclick="editarProdutoReal(${jsArg(docId)})">
+                <img src="${escapeAttr(fotoUrl)}" class="img-produto" alt="Foto Lanche">
                 <div class="conteudo-produto">
                     <div>
-                        <div class="titulo-produto">${prod.nome}</div>
-                        <span style="color: var(--text-green); font-weight: bold; margin-bottom: 8px; display: block; font-size: 17px;">R$ ${prod.preco.toFixed(2).replace('.',',')}</span>
-                        <div class="desc-produto" title="${descText}">${descText}</div>
+                        <div class="titulo-produto">${escapeHTML(prod.nome)}</div>
+                        <span style="color: var(--text-green); font-weight: bold; margin-bottom: 8px; display: block; font-size: 17px;">R$ ${precoProduto.toFixed(2).replace('.',',')}</span>
+                        <div class="desc-produto" title="${escapeAttr(descText)}">${escapeHTML(descText)}</div>
                     </div>
-                    <button onclick="excluirProdutoReal(event, '${docId}')" style="background: rgba(248, 81, 73, 0.1); color: var(--text-red); border: 1px solid rgba(248, 81, 73, 0.3); padding: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s;" onmouseover="this.style.background='var(--text-red)'; this.style.color='black';" onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='var(--text-red)';">🗑️ Remover Lanche</button>
+                    <button onclick="excluirProdutoReal(event, ${jsArg(docId)})" style="background: rgba(248, 81, 73, 0.1); color: var(--text-red); border: 1px solid rgba(248, 81, 73, 0.3); padding: 8px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s;" onmouseover="this.style.background='var(--text-red)'; this.style.color='black';" onmouseout="this.style.background='rgba(248, 81, 73, 0.1)'; this.style.color='var(--text-red)';">🗑️ Remover Lanche</button>
                 </div>
             </div>
         `;
@@ -147,15 +179,16 @@ onSnapshot(qProdutos, (snapshot) => {
         listPDV.innerHTML = '';
         produtosNoBanco.forEach(p => {
             // Traz a foto oficial do lanche
-            const fotoUrl = (p.imagem && p.imagem.startsWith('http')) ? p.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+            const fotoUrl = safeHttpUrl(p.imagem);
+            const precoProduto = safeNumber(p.preco);
             
             listPDV.innerHTML += `
-                <div class="custom-option" data-id="${p.idFirebase}" data-nome="${p.nome.toLowerCase()}" onclick="selecionarProdutoPDV('${p.idFirebase}', '${p.nome}')">
+                <div class="custom-option" data-id="${escapeAttr(p.idFirebase)}" data-nome="${escapeAttr(String(p.nome ?? '').toLowerCase())}" onclick="selecionarProdutoPDV(${jsArg(p.idFirebase)}, ${jsArg(p.nome)})">
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <img src="${fotoUrl}" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
-                        <span class="opt-nome" style="font-size: 15px; font-weight: 600;">${p.nome}</span>
+                        <img src="${escapeAttr(fotoUrl)}" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
+                        <span class="opt-nome" style="font-size: 15px; font-weight: 600;">${escapeHTML(p.nome)}</span>
                     </div>
-                    <span class="opt-preco" style="font-size: 14px;">R$ ${p.preco.toFixed(2).replace('.',',')}</span>
+                    <span class="opt-preco" style="font-size: 14px;">R$ ${precoProduto.toFixed(2).replace('.',',')}</span>
                 </div>
             `;
         });
@@ -170,24 +203,24 @@ onSnapshot(qProdutos, (snapshot) => {
             const badgeEsgotado = (p.estoque !== undefined && p.estoque !== null && p.estoque <= 0) ? `<span style="background: var(--soft-red); color: var(--text-red); padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold;">ESGOTADO</span>` : '';
             
             // Puxa a mesma foto cadastrada lá na aba do Cardápio!
-            const fotoUrl = (p.imagem && p.imagem.startsWith('http')) ? p.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+            const fotoUrl = safeHttpUrl(p.imagem);
             
             // Salvamos a categoria invisível no cartão para o filtro ler
             const catFiltro = p.categoria || 'Outros';
             
             gridEstoque.innerHTML += `
-                <div class="cartao-estoque-item" data-categoria="${catFiltro}" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--text-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
+                <div class="cartao-estoque-item" data-categoria="${escapeAttr(catFiltro)}" style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 15px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--text-blue)'" onmouseout="this.style.borderColor='var(--border-color)'">
                     <div style="display: flex; gap: 15px; align-items: center;">
-                        <img src="${fotoUrl}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid #444; background: #222;">
+                        <img src="${escapeAttr(fotoUrl)}" style="width: 65px; height: 65px; object-fit: cover; border-radius: 8px; flex-shrink: 0; border: 1px solid #444; background: #222;">
                         <div style="flex: 1; min-width: 0;">
-                            <strong style="color: white; font-size: 15px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${p.nome}">${p.nome}</strong> 
-                            <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 5px;">${p.categoria}</span>
+                            <strong style="color: white; font-size: 15px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeAttr(p.nome)}">${escapeHTML(p.nome)}</strong>
+                            <span style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 5px;">${escapeHTML(p.categoria)}</span>
                             ${badgeEsgotado}
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
-                        <input type="number" id="estoque-${p.idFirebase}" class="input-padrao" style="width: 100%; flex: 1; text-align: center; padding: 10px; font-weight: bold;" placeholder="Infinito" value="${estoqueAtual}">
-                        <button onclick="salvarEstoqueProduto('${p.idFirebase}')" style="background: var(--text-blue); color: black; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Atualizar</button>
+                        <input type="number" id="estoque-${escapeAttr(p.idFirebase)}" class="input-padrao" style="width: 100%; flex: 1; text-align: center; padding: 10px; font-weight: bold;" placeholder="Infinito" value="${escapeAttr(estoqueAtual)}">
+                        <button onclick="salvarEstoqueProduto(${jsArg(p.idFirebase)})" style="background: var(--text-blue); color: black; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;">Atualizar</button>
                     </div>
                 </div>
             `;
@@ -407,7 +440,7 @@ window.atualizarSelectInsumosNoLanche = function() {
     select.innerHTML = '<option value="">Selecione um insumo...</option>';
     if (window.insumosNaMemoria && window.insumosNaMemoria.length > 0) {
         window.insumosNaMemoria.forEach(ins => {
-            select.innerHTML += `<option value="${ins.id}">${ins.nome}</option>`;
+            select.innerHTML += `<option value="${escapeAttr(ins.id)}">${escapeHTML(ins.nome)}</option>`;
         });
     }
 }
@@ -425,7 +458,7 @@ function renderizarListasTemp() {
     if(boxIng) {
         boxIng.innerHTML = '';
         tempIngredientes.forEach((ing, i) => {
-            boxIng.innerHTML += `<span class="tag-item">${ing} <button class="btn-remover-tag" onclick="removerItemTemp('ing', ${i})">×</button></span>`;
+            boxIng.innerHTML += `<span class="tag-item">${escapeHTML(ing)} <button class="btn-remover-tag" onclick="removerItemTemp('ing', ${i})">×</button></span>`;
         });
     }
 
@@ -433,7 +466,7 @@ function renderizarListasTemp() {
     if(boxAdd) { 
         boxAdd.innerHTML = '';
         tempAdicionais.forEach((add, i) => {
-            boxAdd.innerHTML += `<span class="tag-item">${add.nome} (+R$${add.preco.toFixed(2)}) <button class="btn-remover-tag" onclick="removerItemTemp('add', ${i})">×</button></span>`;
+            boxAdd.innerHTML += `<span class="tag-item">${escapeHTML(add.nome)} (+R$${safeNumber(add.preco).toFixed(2)}) <button class="btn-remover-tag" onclick="removerItemTemp('add', ${i})">×</button></span>`;
         });
     }
 
@@ -441,7 +474,7 @@ function renderizarListasTemp() {
     if(boxOpt) {
         boxOpt.innerHTML = '';
         tempOpcoes.forEach((opt, i) => {
-            boxOpt.innerHTML += `<span class="tag-item" style="border-color: var(--text-orange);">${opt.nome} (R$${opt.preco.toFixed(2)}) <button class="btn-remover-tag" onclick="removerItemTemp('opt', ${i})">×</button></span>`;
+            boxOpt.innerHTML += `<span class="tag-item" style="border-color: var(--text-orange);">${escapeHTML(opt.nome)} (R$${safeNumber(opt.preco).toFixed(2)}) <button class="btn-remover-tag" onclick="removerItemTemp('opt', ${i})">×</button></span>`;
         });
     }
 
@@ -449,7 +482,7 @@ function renderizarListasTemp() {
     if(boxRec) {
         boxRec.innerHTML = '';
         tempReceita.forEach((rec, i) => {
-            boxRec.innerHTML += `<span class="tag-item" style="border-color: var(--text-blue);">${rec.quantidade}x ${rec.nome} <button class="btn-remover-tag" onclick="removerItemTemp('rec', ${i})">×</button></span>`;
+            boxRec.innerHTML += `<span class="tag-item" style="border-color: var(--text-blue);">${safeNumber(rec.quantidade)}x ${escapeHTML(rec.nome)} <button class="btn-remover-tag" onclick="removerItemTemp('rec', ${i})">×</button></span>`;
         });
     }
 }
@@ -545,8 +578,8 @@ window.abrirGaveta = function(id) {
     // Injetando o layout direto no nome do cliente com o botão do WhatsApp
     document.getElementById('drawer-cliente').innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <div style="font-size: 22px; font-weight: bold; color: white;">👤 ${pedido.cliente || "Sem Nome"}</div>
-            ${whatsAppLimpo ? `<a href="${linkWhats}" target="_blank" style="background: var(--soft-green); color: var(--text-green); border: 1px solid rgba(46, 160, 67, 0.4); padding: 8px 14px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 6px; transition: 0.2s;" onmouseover="this.style.background='rgba(46, 160, 67, 0.3)'" onmouseout="this.style.background='var(--soft-green)'">💬 WhatsApp</a>` : ''}
+            <div style="font-size: 22px; font-weight: bold; color: white;">👤 ${escapeHTML(pedido.cliente || "Sem Nome")}</div>
+            ${whatsAppLimpo ? `<a href="${escapeAttr(linkWhats)}" target="_blank" rel="noopener noreferrer" style="background: var(--soft-green); color: var(--text-green); border: 1px solid rgba(46, 160, 67, 0.4); padding: 8px 14px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 6px; transition: 0.2s;" onmouseover="this.style.background='rgba(46, 160, 67, 0.3)'" onmouseout="this.style.background='var(--soft-green)'">💬 WhatsApp</a>` : ''}
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
             <div style="background: ${corTipo}; border: 1px solid ${corTextoTipo}; padding: 12px; border-radius: 8px; text-align: center;">
@@ -569,9 +602,9 @@ window.abrirGaveta = function(id) {
         
         document.getElementById('drawer-box-endereco').style.display = "block"; 
         document.getElementById('drawer-endereco').innerHTML = `
-            <a href="${linkMapa}" target="_blank" style="text-decoration: none; display: block;">
+            <a href="${escapeAttr(linkMapa)}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: block;">
                 <div style="background: rgba(46, 160, 67, 0.1); border-left: 4px solid var(--text-green); padding: 12px; border-radius: 4px; color: white; line-height: 1.5; font-size: 15px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.background='rgba(46, 160, 67, 0.2)'" onmouseout="this.style.background='rgba(46, 160, 67, 0.1)'">
-                    📍 ${pedido.endereco} <br>
+                    📍 ${escapeHTML(pedido.endereco)} <br>
                     <span style="font-size: 11px; color: var(--text-green); margin-top: 6px; display: inline-block; font-weight: bold;">🗺️ Clique para abrir a rota no Mapa</span>
                 </div>
             </a>`; 
@@ -583,14 +616,14 @@ window.abrirGaveta = function(id) {
     let itensHTML = '';
     if(pedido.itens) {
         pedido.itens.forEach(item => {
-            let adds = (item.listaAdicionais && item.listaAdicionais.length > 0) ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">&plus; ${item.listaAdicionais.join(', ')}</div>` : '';
-            let obs = (item.obs && item.obs.trim() !== '') ? `<div style="font-size: 13px; color: var(--text-red); margin-top: 4px; font-weight: bold;">⚠️ Obs: ${item.obs}</div>` : '';
-            let pco = (typeof item.preco === 'number') ? item.preco.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : item.preco;
+            let adds = (item.listaAdicionais && item.listaAdicionais.length > 0) ? `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">&plus; ${item.listaAdicionais.map(escapeHTML).join(', ')}</div>` : '';
+            let obs = (item.obs && item.obs.trim() !== '') ? `<div style="font-size: 13px; color: var(--text-red); margin-top: 4px; font-weight: bold;">⚠️ Obs: ${escapeHTML(item.obs)}</div>` : '';
+            let pco = (typeof item.preco === 'number') ? item.preco.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'}) : escapeHTML(item.preco);
             
             itensHTML += `
                 <div style="background: var(--bg-main); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; color: white;">
-                        <span><span style="color: var(--text-orange); margin-right: 5px;">${item.quantidade}x</span> ${item.nome.replace(' (Personalizado)', '')}</span> 
+                        <span><span style="color: var(--text-orange); margin-right: 5px;">${safeNumber(item.quantidade, 1)}x</span> ${escapeHTML(stripPersonalizado(item.nome))}</span>
                         <span style="color: var(--text-green);">${pco}</span>
                     </div>
                     ${adds} 
@@ -603,14 +636,14 @@ window.abrirGaveta = function(id) {
          itensHTML += `
             <div style="display: flex; justify-content: space-between; padding: 10px; font-size: 14px; color: var(--text-muted); border-top: 1px dashed var(--border-color); margin-top: 10px;">
                 <span>Taxa de Entrega</span>
-                <span>${pedido.taxaEntrega}</span>
+                <span>${escapeHTML(pedido.taxaEntrega)}</span>
             </div>`;
     }
     document.getElementById('drawer-itens').innerHTML = itensHTML || '<div class="info-text">Sem itens</div>';
 
     // 7. OBSERVAÇÕES GERAIS E TOTAL
     const obsGeralHtml = (pedido.observacoes && pedido.observacoes !== "Nenhuma") 
-        ? `<div style="background: var(--soft-orange); color: var(--text-orange); padding: 12px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(210, 153, 34, 0.4);">🚨 ${pedido.observacoes}</div>`
+        ? `<div style="background: var(--soft-orange); color: var(--text-orange); padding: 12px; border-radius: 8px; font-weight: bold; border: 1px solid rgba(210, 153, 34, 0.4);">🚨 ${escapeHTML(pedido.observacoes)}</div>`
         : `<div style="color: var(--text-muted); font-style: italic;">Sem observações.</div>`;
     document.getElementById('drawer-obs').innerHTML = obsGeralHtml;
     
@@ -618,29 +651,34 @@ window.abrirGaveta = function(id) {
 
     // 8. BOTÕES DE AÇÃO (Com a lógica do Motoboy aplicada)
     // O botão de imprimir fica sempre fixo do lado esquerdo
-    let actHTML = `<button class="btn-action" style="background:#444; color:#fff; flex: 0.4;" onclick="imprimirComanda('${id}')">🖨️ Imprimir</button>`;
+    let actHTML = `<button class="btn-action" style="background:#444; color:#fff; flex: 0.4;" onclick="imprimirComanda(${jsArg(id)})">🖨️ Imprimir</button>`;
     
-    if(pedido.status === "Pendente") actHTML += `<button class="btn-action" style="background:var(--text-orange); color:#000;" onclick="mudarStatusFechando('${id}', 'Em Preparo')">👨‍🍳 Iniciar Preparo</button>`;
-    else if(pedido.status === "Em Preparo") actHTML = `<button class="btn-action" style="background:var(--text-blue); color:#000;" onclick="mudarStatusFechando('${id}', 'Pronto')">✅ Marcar Pronto</button>`;
+    if(pedido.status === "Pendente") actHTML += `<button class="btn-action" style="background:var(--text-orange); color:#000;" onclick="mudarStatusFechando(${jsArg(id)}, 'Em Preparo')">👨‍🍳 Iniciar Preparo</button>`;
+    else if(pedido.status === "Em Preparo") actHTML = `<button class="btn-action" style="background:var(--text-blue); color:#000;" onclick="mudarStatusFechando(${jsArg(id)}, 'Pronto')">✅ Marcar Pronto</button>`;
     
     // AQUI ENTRA A LÓGICA DE ESCOLHER O MOTOBOY (O Passo 3 Perdido)
     else if(pedido.status === "Pronto" && mostraEnd) {
         let opcoesMotoboy = '<option value="">Quem vai entregar?...</option>';
         if (typeof motoboysNoBanco !== 'undefined') {
             motoboysNoBanco.forEach(m => {
-                opcoesMotoboy += `<option value="${m.nome}">${m.nome}</option>`;
+                opcoesMotoboy += `<option value="${escapeAttr(m.nome)}">${escapeHTML(m.nome)}</option>`;
             });
         }
         actHTML = `
-            <select id="select-moto-${id}" style="flex: 2; padding: 10px; border-radius: 6px; background: var(--bg-main); color: white; border: 1px solid var(--border-color); font-size: 14px; outline: none;">
+            <select id="select-moto-${escapeAttr(id)}" style="flex: 2; padding: 10px; border-radius: 6px; background: var(--bg-main); color: white; border: 1px solid var(--border-color); font-size: 14px; outline: none;">
                 ${opcoesMotoboy}
             </select>
-            <button class="btn-action" style="flex: 1; background:var(--text-green); color:#000;" onclick="despacharComMotoboy('${id}')">🛵 Despachar</button>
+            <button class="btn-action" style="flex: 1; background:var(--text-green); color:#000;" onclick="despacharComMotoboy(${jsArg(id)})">🛵 Despachar</button>
         `;
     }
     
-    else if(pedido.status === "Pronto") actHTML = `<button class="btn-action" style="background:var(--text-purple); color:#000;" onclick="mudarStatusFechando('${id}', 'Finalizado')">🤝 Entregue ao Cliente</button>`;
-    else if(pedido.status === "Saiu para Entrega") actHTML = `<button class="btn-action" style="background:var(--text-purple); color:#000;" onclick="mudarStatusFechando('${id}', 'Finalizado')">✅ Confirmar Entrega</button>`;
+    else if(pedido.status === "Pronto") actHTML = `<button class="btn-action" style="background:var(--text-purple); color:#000;" onclick="mudarStatusFechando(${jsArg(id)}, 'Finalizado')">🤝 Entregue ao Cliente</button>`;
+    else if(pedido.status === "Saiu para Entrega") {
+        actHTML = `
+            <button class="btn-action" style="background:#25D366; color:#000;" onclick="abrirAvisoSaidaWhatsApp(${jsArg(id)})">💬 Avisar manualmente</button>
+            <button class="btn-action" style="background:var(--text-purple); color:#000;" onclick="mudarStatusFechando(${jsArg(id)}, 'Finalizado')">✅ Confirmar Entrega</button>
+        `;
+    }
     
     document.getElementById('drawer-actions').innerHTML = actHTML;
 
@@ -658,6 +696,14 @@ window.fecharGaveta = function() {
 window.mudarStatus = async (idDoPedido, novoStatus) => { 
     try { 
         let pacoteAtualizacao = { status: novoStatus };
+
+        const pedidoAtual = dadosCompletosMemoria[idDoPedido];
+        if (novoStatus === 'Em Preparo' && pedidoAtual?.whatsapp) {
+            pacoteAtualizacao.whatsappPreparoEnviado = false;
+            pacoteAtualizacao.whatsappPreparoStatus = 'pendente';
+            pacoteAtualizacao.whatsappPreparoErro = null;
+            if (pedidoAtual.numeroDiario) pacoteAtualizacao.numeroDiario = pedidoAtual.numeroDiario;
+        }
 
         // --- MÁGICA: DESCONTO AUTOMÁTICO (PRODUTO + COZINHA) ---
         if (novoStatus === 'Pronto') {
@@ -700,18 +746,42 @@ window.mudarStatusFechando = async function(id, status) {
     fecharGaveta(); 
 }
 
+window.abrirAvisoSaidaWhatsApp = function(id) {
+    const pedido = dadosCompletosMemoria[id];
+    if(!pedido || !pedido.whatsapp) return alert("Pedido sem WhatsApp cadastrado.");
+
+    const numeroLocal = String(pedido.whatsapp).replace(/\D/g, '');
+    const numeroComPais = numeroLocal.startsWith('55') ? numeroLocal : `55${numeroLocal}`;
+    const numeroPedido = pedido.numeroDiario
+        ? String(pedido.numeroDiario).padStart(3, '0')
+        : id.substring(0, 6).toUpperCase();
+    const mensagem = `Olá, ${pedido.cliente || 'cliente'}! 🍽️\n\nSeu pedido #${numeroPedido} saiu para entrega.\nO entregador já está a caminho. 🛵\n\nObrigado pela preferência!\nPitstop Burguer`;
+
+    window.open(`https://wa.me/${numeroComPais}?text=${encodeURIComponent(mensagem)}`, '_blank', 'noopener,noreferrer');
+}
+
 // FUNÇÃO PARA DESPACHAR COM O MOTOBOY SELECIONADO
 window.despacharComMotoboy = async function(id) {
     const select = document.getElementById(`select-moto-${id}`);
     const nomeMotoboy = select.value;
+    const pedido = dadosCompletosMemoria[id];
     
     if(!nomeMotoboy) return alert("⚠️ Selecione um motoboy na lista para poder despachar!");
 
     try {
-        await updateDoc(doc(db, "pedidos", id), { 
+        const atualizacao = {
             status: 'Saiu para Entrega',
-            entregador: nomeMotoboy
-        });
+            entregador: nomeMotoboy,
+            whatsappSaiuEntregaEnviado: false,
+            whatsappStatus: 'pendente',
+            whatsappErro: null
+        };
+
+        if(pedido && pedido.numeroDiario) {
+            atualizacao.numeroDiario = pedido.numeroDiario;
+        }
+
+        await updateDoc(doc(db, "pedidos", id), atualizacao);
         fecharGaveta();
     } catch (erro) {
         alert("Erro ao despachar: " + erro);
@@ -796,9 +866,9 @@ onSnapshot(qPedidos, (snapshot) => {
         if(pedido.itens && pedido.itens.length > 0) {
             let qtdTotal = 0;
             pedido.itens.forEach(i => qtdTotal += i.quantidade);
-            let nomes = pedido.itens.map(i => i.nome.replace(' (Personalizado)', '')).join(', ');
+            let nomes = pedido.itens.map(i => stripPersonalizado(i.nome)).join(', ');
             if(nomes.length > 32) nomes = nomes.substring(0, 32) + '...';
-            resumoItens = `<div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">📦 ${qtdTotal} item(s): ${nomes}</div>`;
+            resumoItens = `<div style="font-size: 11px; color: var(--text-muted); margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 6px;">📦 ${safeNumber(qtdTotal)} item(s): ${escapeHTML(nomes)}</div>`;
         }
 
         const card = document.createElement('div'); card.className = 'card-mini'; card.onclick = () => abrirGaveta(id);
@@ -807,11 +877,11 @@ onSnapshot(qPedidos, (snapshot) => {
                 <span class="tag ${tagClass}" style="padding: 4px 8px;">${tagTxt}</span>
                 <span class="card-timer" style="font-size: 11px;">⏰ ${new Date(pedido.dataCriacao).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
-            <div class="card-client" style="font-size: 16px; margin-bottom: 8px;">${pedido.cliente || 'Sem Nome'}</div>
+            <div class="card-client" style="font-size: 16px; margin-bottom: 8px;">${escapeHTML(pedido.cliente || 'Sem Nome')}</div>
             ${resumoItens}
             <div class="card-info" style="border-top: 1px dashed var(--border-color); padding-top: 10px; margin-top: auto;">
                 <span class="card-id" style="font-weight: bold; font-size: 15px; color: var(--text-orange);">#${pedido.numeroDiario.toString().padStart(3, '0')}</span>
-                <strong style="color: white; font-size: 15px;">${pedido.totalGeral}</strong>
+                <strong style="color: white; font-size: 15px;">${escapeHTML(pedido.totalGeral)}</strong>
             </div>
         `;
 
@@ -851,10 +921,10 @@ onSnapshot(collection(db, "motoboys"), (snapshot) => {
                     <span class="material-symbols-outlined" style="font-size: 18px;">directions_bike</span>
                 </div>
                 <div style="flex: 1; min-width: 0;">
-                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${moto.nome}</strong>
-                    <span style="font-size: 10px; color: var(--text-muted);">${moto.telefone}</span>
+                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(moto.nome)}</strong>
+                    <span style="font-size: 10px; color: var(--text-muted);">${escapeHTML(moto.telefone)}</span>
                 </div>
-                <button onclick="excluirMotoboy('${id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; transition: 0.2s;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
+                <button onclick="excluirMotoboy(${jsArg(id)})" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; transition: 0.2s;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
                     <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
                 </button>
             </div>
@@ -1065,9 +1135,9 @@ window.carregarDashboard = async function() {
             tbody.innerHTML += `
                 <tr style="border-bottom: 1px solid var(--border-color); transition: background 0.2s;" onmouseover="this.style.background='var(--bg-hover)'" onmouseout="this.style.background='transparent'">
                     <td style="padding: 12px 10px; color: var(--text-muted); font-family: monospace;">#${p.id.substring(0,6).toUpperCase()}</td>
-                    <td style="padding: 12px 10px; font-weight: bold; color: white;">${p.cliente || 'Sem Nome'}</td>
+                    <td style="padding: 12px 10px; font-weight: bold; color: white;">${escapeHTML(p.cliente || 'Sem Nome')}</td>
                     <td style="padding: 12px 10px; color: var(--text-muted);">${dataStr}</td>
-                    <td style="padding: 12px 10px; color: var(--text-green); font-weight: bold;">${p.totalGeral}</td>
+                    <td style="padding: 12px 10px; color: var(--text-green); font-weight: bold;">${escapeHTML(p.totalGeral)}</td>
                 </tr>
             `;
         });
@@ -1245,9 +1315,9 @@ window.atualizarListaPDV = function() {
         lista.innerHTML += `
             <div class="pdv-item">
                 <div class="pdv-item-info">
-                    <div class="pdv-item-qtd">${item.quantidade}x</div>
+                    <div class="pdv-item-qtd">${safeNumber(item.quantidade, 1)}x</div>
                     <div class="pdv-item-txt">
-                        <strong>${item.nome.replace(' (Personalizado)', '')}</strong>
+                        <strong>${escapeHTML(stripPersonalizado(item.nome))}</strong>
                         <span>R$ ${precoFormatado} cada</span>
                     </div>
                 </div>
@@ -1306,7 +1376,12 @@ window.salvarPedidoManual = async function() {
         itens: [...carrinhoPDV], 
         // MUDANÇA: Agora o pedido manual já entra direto na cozinha (Em Preparo)
         status: "Em Preparo", 
-        dataCriacao: Date.now()
+        dataCriacao: Date.now(),
+        ...(whats ? {
+            whatsappPreparoEnviado: false,
+            whatsappPreparoStatus: "pendente",
+            whatsappPreparoErro: null
+        } : {})
     };
 
     // Agora ele procura o botão dentro do Modal correto!
@@ -1369,17 +1444,17 @@ window.imprimirComanda = function(id) {
 
             itensHtml += `
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 14px; margin-bottom: 2px;">
-                    <span style="flex: 1; padding-right: 10px;"><b>${item.quantidade}x</b> ${item.nome.replace(' (Personalizado)', '')}</span>
-                    <span style="font-weight: bold; white-space: nowrap;">${pco}</span>
+                    <span style="flex: 1; padding-right: 10px;"><b>${safeNumber(item.quantidade, 1)}x</b> ${escapeHTML(stripPersonalizado(item.nome))}</span>
+                    <span style="font-weight: bold; white-space: nowrap;">${escapeHTML(pco)}</span>
                 </div>
             `;
             
             if(item.listaAdicionais && item.listaAdicionais.length > 0) {
                 // Coloca um adicional por linha para ficar fácil da cozinha ler
-                itensHtml += `<div style="font-size: 12px; padding-left: 20px;">+ ${item.listaAdicionais.join('<br>+ ')}</div>`;
+                itensHtml += `<div style="font-size: 12px; padding-left: 20px;">+ ${item.listaAdicionais.map(escapeHTML).join('<br>+ ')}</div>`;
             }
             if(item.obs && item.obs.trim() !== '') {
-                itensHtml += `<div style="font-size: 12px; font-weight: bold; padding-left: 20px;">* Obs: ${item.obs}</div>`;
+                itensHtml += `<div style="font-size: 12px; font-weight: bold; padding-left: 20px;">* Obs: ${escapeHTML(item.obs)}</div>`;
             }
             itensHtml += `<div style="margin-bottom: 10px;"></div>`;
         });
@@ -1414,21 +1489,21 @@ window.imprimirComanda = function(id) {
             
             <div class="linha-tracejada"></div>
             
-            <div style="font-size: 14px; margin-bottom: 4px;"><b>Cliente:</b> ${pedido.cliente}</div>
-            <div style="font-size: 14px; margin-bottom: 4px;"><b>Tipo:</b> ${pedido.tipo.toUpperCase()}</div>
-            ${pedido.tipo === 'entrega' ? `<div style="font-size: 14px; margin-bottom: 4px;"><b>Endereço:</b> ${pedido.endereco}</div>` : ''}
-            <div style="font-size: 14px; margin-bottom: 10px;"><b>Pgto:</b> ${pagamentoTexto}</div>
+            <div style="font-size: 14px; margin-bottom: 4px;"><b>Cliente:</b> ${escapeHTML(pedido.cliente)}</div>
+            <div style="font-size: 14px; margin-bottom: 4px;"><b>Tipo:</b> ${escapeHTML(String(pedido.tipo ?? '').toUpperCase())}</div>
+            ${pedido.tipo === 'entrega' ? `<div style="font-size: 14px; margin-bottom: 4px;"><b>Endereço:</b> ${escapeHTML(pedido.endereco)}</div>` : ''}
+            <div style="font-size: 14px; margin-bottom: 10px;"><b>Pgto:</b> ${escapeHTML(pagamentoTexto)}</div>
             
             <div class="linha-tracejada"></div>
             
-            ${pedido.observacoes && pedido.observacoes !== 'Nenhuma' ? `<div style="font-size: 14px; margin-bottom: 10px; border: 1px solid black; padding: 6px;"><b>OBS GERAIS:</b><br>${pedido.observacoes}</div><div class="linha-tracejada"></div>` : ''}
+            ${pedido.observacoes && pedido.observacoes !== 'Nenhuma' ? `<div style="font-size: 14px; margin-bottom: 10px; border: 1px solid black; padding: 6px;"><b>OBS GERAIS:</b><br>${escapeHTML(pedido.observacoes)}</div><div class="linha-tracejada"></div>` : ''}
             
-            ${pedido.subtotal ? `<div class="flex-row"><span>Subtotal:</span><span>${pedido.subtotal}</span></div>` : ''}
-            ${pedido.tipo === 'entrega' && pedido.taxaEntrega ? `<div class="flex-row"><span>Taxa de Entrega:</span><span>${pedido.taxaEntrega}</span></div>` : ''}
+            ${pedido.subtotal ? `<div class="flex-row"><span>Subtotal:</span><span>${escapeHTML(pedido.subtotal)}</span></div>` : ''}
+            ${pedido.tipo === 'entrega' && pedido.taxaEntrega ? `<div class="flex-row"><span>Taxa de Entrega:</span><span>${escapeHTML(pedido.taxaEntrega)}</span></div>` : ''}
             
             <div class="flex-row" style="margin-top: 10px; font-size: 18px; font-weight: bold;">
                 <span>TOTAL:</span>
-                <span>${pedido.totalGeral}</span>
+                <span>${escapeHTML(pedido.totalGeral)}</span>
             </div>
             
             <div style="text-align: center; margin-top: 25px; font-size: 12px; font-weight: bold;">Obrigado pela preferência!</div>
@@ -1486,10 +1561,10 @@ onSnapshot(collection(db, "bairros"), (snapshot) => {
         grid.innerHTML += `
             <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 10px 15px; display: flex; align-items: center; gap: 10px; transition: 0.2s;" onmouseover="this.style.borderColor='var(--text-orange)'" onmouseout="this.style.borderColor='var(--border-color)'">
                 <div style="flex: 1; min-width: 0;">
-                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${b.nome}</strong>
+                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHTML(b.nome)}</strong>
                     <span style="font-size: 11px; color: ${corTaxa}; font-weight: bold;">Taxa: ${taxaTexto}</span>
                 </div>
-                <button onclick="excluirBairro('${id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; transition: 0.2s;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
+                <button onclick="excluirBairro(${jsArg(id)})" style="background: none; border: none; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; transition: 0.2s;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
                     <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
                 </button>
             </div>
@@ -1657,7 +1732,7 @@ window.renderizarEstoqueModal = function(categoriaFiltro = 'todas') {
     produtosNoBanco.forEach(p => {
         if (categoriaFiltro !== 'todas' && p.categoria !== categoriaFiltro) return;
 
-        const fotoUrl = (p.imagem && p.imagem.startsWith('http')) ? p.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+        const fotoUrl = safeHttpUrl(p.imagem);
         const valorEstoque = (p.estoque !== undefined && p.estoque !== null) ? p.estoque : '';
 
         // --- MÁGICA: SEPARA LANCHES DE BEBIDAS ---
@@ -1673,7 +1748,7 @@ window.renderizarEstoqueModal = function(categoriaFiltro = 'todas') {
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                     <label style="font-size: 10px; color: var(--text-muted); font-weight: bold;">STATUS NO SITE</label>
                     <label class="ios-switch" style="transform: scale(0.8); transform-origin: right; margin-top: 2px;">
-                        <input type="checkbox" ${checkedAttr} onchange="toggleEstoqueLanche('${p.idFirebase}', this)">
+                        <input type="checkbox" ${checkedAttr} onchange="toggleEstoqueLanche(${jsArg(p.idFirebase)}, this)">
                         <span class="ios-slider"></span>
                     </label>
                 </div>
@@ -1683,17 +1758,17 @@ window.renderizarEstoqueModal = function(categoriaFiltro = 'todas') {
             controleHTML = `
                 <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
                     <label style="font-size: 10px; color: var(--text-muted); font-weight: bold;">QTD DISPONÍVEL</label>
-                    <input type="number" min="0" value="${valorEstoque}" placeholder="Infinito" onchange="salvarEstoqueItem('${p.idFirebase}', this)" style="width: 80px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-orange); padding: 8px; border-radius: 6px; font-weight: bold; outline: none; transition: 0.3s;">
+                    <input type="number" min="0" value="${escapeAttr(valorEstoque)}" placeholder="Infinito" onchange="salvarEstoqueItem(${jsArg(p.idFirebase)}, this)" style="width: 80px; text-align: center; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); color: var(--text-orange); padding: 8px; border-radius: 6px; font-weight: bold; outline: none; transition: 0.3s;">
                 </div>
             `;
         }
 
         grid.innerHTML += `
             <div style="background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 12px; transition: 0.2s;">
-                <img src="${fotoUrl}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.05);">
+                <img src="${escapeAttr(fotoUrl)}" style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid rgba(255,255,255,0.05);">
                 <div style="flex: 1;">
-                    <strong style="color: white; font-size: 14px; display: block; margin-bottom: 4px;">${p.nome}</strong>
-                    <span style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${p.categoria}</span>
+                    <strong style="color: white; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(p.nome)}</strong>
+                    <span style="font-size: 11px; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 4px;">${escapeHTML(p.categoria)}</span>
                 </div>
                 ${controleHTML}
             </div>
@@ -1775,18 +1850,18 @@ onSnapshot(collection(db, "insumos"), (snapshot) => {
         grid.innerHTML += `
             <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 15px; display: flex; align-items: center; gap: 12px; transition: 0.2s;">
                 <div style="flex: 1; min-width: 0;">
-                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize;">${insumo.nome}</strong>
-                    <span style="font-size: 11px; color: var(--text-muted);">Estoque: <b style="color: var(--text-orange);">${insumo.quantidade}</b></span>
+                    <strong style="color: white; font-size: 13px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: capitalize;">${escapeHTML(insumo.nome)}</strong>
+                    <span style="font-size: 11px; color: var(--text-muted);">Estoque: <b style="color: var(--text-orange);">${escapeHTML(insumo.quantidade)}</b></span>
                 </div>
 
                 <div style="display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.03);">
-                    <input type="number" id="entrada-${id}" placeholder="+ Qtd" style="width: 50px; background: transparent; border: none; color: var(--text-green); font-size: 12px; font-weight: bold; outline: none; text-align: center;">
-                    <button onclick="entradaInsumo('${id}')" style="background: var(--text-green); color: black; border: none; border-radius: 4px; width: 26px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                    <input type="number" id="entrada-${escapeAttr(id)}" placeholder="+ Qtd" style="width: 50px; background: transparent; border: none; color: var(--text-green); font-size: 12px; font-weight: bold; outline: none; text-align: center;">
+                    <button onclick="entradaInsumo(${jsArg(id)})" style="background: var(--text-green); color: black; border: none; border-radius: 4px; width: 26px; height: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                         <span class="material-symbols-outlined" style="font-size: 16px; font-weight: bold;">add</span>
                     </button>
                 </div>
 
-                <button onclick="excluirInsumo('${id}')" style="background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s; display: flex; align-items: center;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
+                <button onclick="excluirInsumo(${jsArg(id)})" style="background: none; border: none; color: var(--text-muted); cursor: pointer; transition: 0.2s; display: flex; align-items: center;" onmouseover="this.style.color='var(--text-red)'" onmouseout="this.style.color='var(--text-muted)'">
                     <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
                 </button>
             </div>
@@ -1879,10 +1954,10 @@ function carregarAdicionaisGlobais() {
             grid.innerHTML += `
                 <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 12px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
-                        <strong style="color: white; font-size: 15px;">${add.nome}</strong>
-                        <span style="color: var(--text-green); font-size: 13px; margin-left: 10px; font-weight: bold;">+ R$ ${add.preco.toFixed(2).replace('.',',')}</span>
+                        <strong style="color: white; font-size: 15px;">${escapeHTML(add.nome)}</strong>
+                        <span style="color: var(--text-green); font-size: 13px; margin-left: 10px; font-weight: bold;">+ R$ ${safeNumber(add.preco).toFixed(2).replace('.',',')}</span>
                     </div>
-                    <button onclick="excluirAdicionalGlobal('${id}')" style="background:rgba(255,255,255,0.05); border:none; color:var(--text-red); width:32px; height:32px; border-radius:6px; cursor:pointer; font-size:18px;">&times;</button>
+                    <button onclick="excluirAdicionalGlobal(${jsArg(id)})" style="background:rgba(255,255,255,0.05); border:none; color:var(--text-red); width:32px; height:32px; border-radius:6px; cursor:pointer; font-size:18px;">&times;</button>
                 </div>
             `;
         });

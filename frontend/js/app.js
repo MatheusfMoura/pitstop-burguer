@@ -5,6 +5,28 @@ window.configuracoesGestor = { taxaEntrega: 7.00 };
 window.produtos = [];
 let carrinho = [];
 
+const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+}[char]));
+const escapeAttr = escapeHTML;
+const safeHttpUrl = (value, fallback = 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png') => {
+    try {
+        const url = new URL(String(value ?? ''), window.location.origin);
+        return ['http:', 'https:'].includes(url.protocol) ? url.href : fallback;
+    } catch {
+        return fallback;
+    }
+};
+const safeNumber = (value, fallback = 0) => {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+};
+const safeProductId = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+
 // 2. RENDERIZAÇÃO DO CARDÁPIO COM CATEGORIAS
 const menuContainer = document.getElementById('menu-container');
 
@@ -83,22 +105,25 @@ window.renderizarCardapio = function() {
         categoriasAgrupadas[categoriaNome].forEach(produto => {
             
             // 1. Proteção: Se o produto não tiver preço no banco, assume 0 para não dar erro
-            const precoAtual = produto.preco || 0;
+            const precoAtual = safeNumber(produto.preco);
             
             // 2. Formata o preço base
             let textoPreco = precoAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             
             // 3. Lógica do "A partir de" para preços zerados com opções de tamanho
             if (precoAtual === 0 && produto.opcoes && produto.opcoes.length > 0) {
-                const menorPreco = Math.min(...produto.opcoes.map(opt => opt.preco));
+                const menorPreco = Math.min(...produto.opcoes.map(opt => safeNumber(opt.preco)));
                 textoPreco = `<span style="font-size: 11px; font-weight: normal; margin-right: 4px;">A partir de</span>R$ ${menorPreco.toFixed(2).replace('.', ',')}`;
             }
 
-            const fotoUrl = (produto.imagem && produto.imagem.startsWith('http')) ? produto.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+            const fotoUrl = safeHttpUrl(produto.imagem);
+            const nomeSeguro = escapeHTML(produto.nome);
+            const ingredientesSeguro = escapeHTML(produto.ingredientes ? produto.ingredientes.join(', ') : 'Sem descrição');
+            const idProdutoSeguro = safeProductId(produto.idProduto);
             
             // 4. LÓGICA DE ESTOQUE ESGOTADO (TRAVA O CLIENTE)
             const esgotado = (produto.estoque !== undefined && produto.estoque !== null && produto.estoque <= 0);
-            const acaoClick = esgotado ? "" : `onclick="abrirModalProduto(${produto.idProduto})"`;
+            const acaoClick = esgotado ? "" : `onclick="abrirModalProduto(${idProdutoSeguro})"`;
             const opacidadeCard = esgotado ? "opacity: 0.5; filter: grayscale(1);" : "";
             const badgeEsgotado = esgotado ? `<div style="position: absolute; top: 10px; right: 10px; background: #ff4757; color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; z-index: 10; transform: rotate(15deg); box-shadow: 0 4px 10px rgba(0,0,0,0.5);">ESGOTADO</div>` : '';
 
@@ -107,13 +132,13 @@ window.renderizarCardapio = function() {
                     ${badgeEsgotado}
                     <div class="card-prem-info">
                         <div>
-                            <h3 class="card-prem-titulo">${produto.nome}</h3>
-                            <p class="card-prem-desc">${produto.ingredientes ? produto.ingredientes.join(', ') : 'Sem descrição'}</p>
+                            <h3 class="card-prem-titulo">${nomeSeguro}</h3>
+                            <p class="card-prem-desc">${ingredientesSeguro}</p>
                         </div>
                         <span class="card-prem-preco" style="display: flex; align-items: center;">${textoPreco}</span>
                     </div>
                     <div class="card-prem-img-box">
-                        <img src="${fotoUrl}" alt="Foto" class="card-prem-img">
+                        <img src="${escapeAttr(fotoUrl)}" alt="Foto" class="card-prem-img">
                     </div>
                 </div>
             `;
@@ -178,9 +203,9 @@ window.abrirModalProduto = function(id) {
     produtoSelecionado = window.produtos.find(p => p.idProduto === id);
     if(!produtoSelecionado) return;
 
-    const fotoUrl = (produtoSelecionado.imagem && produtoSelecionado.imagem.startsWith('http')) ? produtoSelecionado.imagem : 'https://cdn-icons-png.flaticon.com/512/3075/3075977.png';
+    const fotoUrl = safeHttpUrl(produtoSelecionado.imagem);
     
-    document.getElementById('prod-emoji').innerHTML = `<img src="${fotoUrl}" alt="Foto">`;
+    document.getElementById('prod-emoji').innerHTML = `<img src="${escapeAttr(fotoUrl)}" alt="Foto">`;
     document.getElementById('prod-nome').innerText = produtoSelecionado.nome;
     document.getElementById('prod-ingredientes').innerText = produtoSelecionado.ingredientes ? produtoSelecionado.ingredientes.join(", ") : "";
     document.getElementById('prod-obs').value = "";
@@ -192,13 +217,15 @@ window.abrirModalProduto = function(id) {
     if(produtoSelecionado.opcoes && produtoSelecionado.opcoes.length > 0) {
         let htmlOpcoes = `<h4 style="margin-bottom: 12px; color: #fff;">Escolha o Tamanho</h4><div class="grupo-opcoes">`;
         produtoSelecionado.opcoes.forEach((opt, i) => {
+            const precoOpcao = safeNumber(opt.preco);
+            const nomeOpcao = escapeHTML(opt.nome);
             htmlOpcoes += `
                 <label class="opcao-radio">
                     <div class="opcao-info">
-                        <span class="opcao-nome">${opt.nome}</span>
-                        <span class="opcao-preco">+ ${opt.preco.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span>
+                        <span class="opcao-nome">${nomeOpcao}</span>
+                        <span class="opcao-preco">+ ${precoOpcao.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</span>
                     </div>
-                    <input type="radio" name="opcao-base" value="${opt.preco}" data-nome="${opt.nome}" ${i === 0 ? 'checked' : ''} onchange="atualizarPrecoModal()">
+                    <input type="radio" name="opcao-base" value="${precoOpcao}" data-nome="${escapeAttr(opt.nome)}" ${i === 0 ? 'checked' : ''} onchange="atualizarPrecoModal()">
                 </label>`;
         });
         htmlOpcoes += `</div>`;
@@ -209,10 +236,11 @@ window.abrirModalProduto = function(id) {
     if(window.adicionaisGlobaisMemoria && window.adicionaisGlobaisMemoria.length > 0) {
         listaAdicionais.innerHTML += `<h4 style="margin-bottom: 12px; color: #fff; border-top: 1px solid #333; padding-top: 15px; margin-top: 10px;">Turbine seu Lanche</h4>`;
         window.adicionaisGlobaisMemoria.forEach((add, index) => {
+            const precoAdd = safeNumber(add.preco);
             listaAdicionais.innerHTML += `
                 <div class="item-adicional" style="margin-bottom: 8px;">
-                    <label for="add-global-${index}">${add.nome} (+ R$ ${add.preco.toFixed(2).replace('.',',')})</label>
-                    <input type="checkbox" id="add-global-${index}" data-preco="${add.preco}" data-nome="${add.nome}" onchange="atualizarPrecoModal()">
+                    <label for="add-global-${index}">${escapeHTML(add.nome)} (+ R$ ${precoAdd.toFixed(2).replace('.',',')})</label>
+                    <input type="checkbox" id="add-global-${index}" data-preco="${precoAdd}" data-nome="${escapeAttr(add.nome)}" onchange="atualizarPrecoModal()">
                 </div>`;
         });
     }
@@ -324,13 +352,13 @@ function atualizarTelaCarrinho() {
         quantidadeTotalItens += item.quantidade;
         
         const precoFormatado = subtotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        let htmlObs = item.obs ? `<div style="font-size: 0.75rem; color: #888; margin-top: 4px;">Obs: ${item.obs}</div>` : '';
+        let htmlObs = item.obs ? `<div style="font-size: 0.75rem; color: #888; margin-top: 4px;">Obs: ${escapeHTML(item.obs)}</div>` : '';
 
         containerItens.innerHTML += `
             <div class="item-carrinho" style="flex-direction: column; align-items: flex-start;">
                 <div style="display: flex; justify-content: space-between; width: 100%;">
                     <div class="item-carrinho-info" style="font-weight: bold;">
-                        ${item.quantidade}x ${item.nome}
+                        ${safeNumber(item.quantidade, 1)}x ${escapeHTML(item.nome)}
                     </div>
                     <div class="item-carrinho-preco" style="display: flex; gap: 10px; align-items: center;">
                         ${precoFormatado}

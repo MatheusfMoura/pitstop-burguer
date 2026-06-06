@@ -5,9 +5,14 @@
     <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hub | Pitstop Burguer</title>
-    <link rel="stylesheet" href="./css/style-gestor.css?v=17">
+    <link rel="stylesheet" href="./css/style-gestor.css?v=18">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body:not(.gestor-autenticado) > :not(#tela-login-gestor):not(script) {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -20,10 +25,8 @@
             <h2 style="color: white; margin-bottom: 10px;">Sistema de Lanchonete</h2>
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Digite sua senha para desbloquear o caixa.</p>
             
-            <!-- CAMPO DE E-MAIL ESCONDIDO E JÁ PREENCHIDO -->
-            <input type="email" id="email-gestor" value="admin@lanchonete.com" style="display: none;">
-            
             <input type="password" id="senha-gestor" class="input-padrao" placeholder="••••••••" style="margin-bottom: 20px; text-align: center; font-size: 20px; letter-spacing: 5px;">
+            <p id="mensagem-login-gestor" style="min-height: 18px; color: var(--text-red); font-size: 12px; margin-bottom: 12px;"></p>
             
             <button onclick="entrarGestor()" class="btn-salvar-lanche" style="width: 100%;">Desbloquear</button>
         </div>
@@ -44,6 +47,9 @@
         </div>
         <div class="menu-item" id="btn-menu-relatorios" onclick="mudarTela('relatorios')" title="Dashboard e Relatórios">
             <span class="material-symbols-outlined" style="font-size: 26px;">bar_chart</span>
+        </div>
+        <div class="menu-item" id="btn-menu-whatsapp" onclick="mudarTela('whatsapp')" title="WhatsApp Bot">
+            <span class="material-symbols-outlined" style="font-size: 26px;">chat</span>
         </div>
         
         <div class="menu-item" onclick="alternarTemaMenu(event)" title="Alterar Tema" style="margin-top: auto; color: var(--text-muted); position: relative;">
@@ -382,6 +388,37 @@
             </div>
         </div>
 
+        <div id="tela-whatsapp" class="tela">
+            <header style="padding: 20px 30px;">
+                <div class="header-title">
+                    <h1 style="font-size: 22px; margin: 0;">WhatsApp Bot</h1>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-top: 6px;">Monitore e reconecte o WhatsApp sem acessar o terminal da VPS.</p>
+                </div>
+            </header>
+            <div class="whatsapp-bot-container">
+                <div class="whatsapp-bot-card">
+                    <span class="material-symbols-outlined" style="font-size: 54px; color: var(--text-green);">chat</span>
+                    <h2 id="whatsapp-bot-status" style="margin: 12px 0 6px; color: var(--text-muted);">Carregando status...</h2>
+                    <p id="whatsapp-bot-detalhe" style="color: var(--text-muted); font-size: 13px;">Aguardando atualização do bot.</p>
+
+                    <div id="whatsapp-bot-qr-box">
+                        <img id="whatsapp-bot-qr" alt="QR Code do WhatsApp">
+                        <p style="color: #222; font-size: 12px; margin: 12px 0 0;">WhatsApp &gt; Aparelhos conectados &gt; Conectar aparelho</p>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px;">
+                        <button class="btn-header-action" onclick="comandarWhatsAppBot('reiniciar')" style="background: var(--soft-blue); color: var(--text-blue);">
+                            <span class="material-symbols-outlined">restart_alt</span> Reiniciar conexão
+                        </button>
+                        <button class="btn-header-action" onclick="comandarWhatsAppBot('novo_qr')" style="background: var(--soft-red); color: var(--text-red);">
+                            <span class="material-symbols-outlined">qr_code_2</span> Gerar novo QR
+                        </button>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 18px;">Use “Gerar novo QR” somente quando a sessão atual não puder mais ser recuperada.</p>
+                </div>
+            </div>
+        </div>
+
     </div> <div class="drawer-overlay" id="drawerOverlay" onclick="fecharGaveta()"></div>
     <div class="drawer" id="drawerPanel">
         <div class="drawer-header">
@@ -416,8 +453,6 @@
         </div>
         <div class="drawer-footer" id="drawer-actions"></div>
     </div>
-
-    <script type="module" src="./js/gestor.js?v=10"></script>
 
     <!-- ÁREA DE IMPRESSÃO DA COMANDA (SÓ APARECE NO PAPEL) -->
     <div id="area-impressao" style="display: none;"></div>
@@ -590,5 +625,6 @@
         </div>
     </div>
 
+    <script type="module" src="./js/gestor-auth.js?v=2"></script>
 </body>
 </html>

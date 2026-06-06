@@ -39,6 +39,63 @@ body { background-color: var(--bg-main); color: var(--text-main); height: 100vh;
 .tela { display: none; flex-direction: column; height: 100%; overflow: hidden; }
 .tela.ativa { display: flex; }
 
+#tela-whatsapp {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.whatsapp-bot-container {
+    padding: 30px;
+    display: flex;
+    justify-content: center;
+}
+
+.whatsapp-bot-card {
+    width: 100%;
+    max-width: 650px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 28px;
+    text-align: center;
+}
+
+#whatsapp-bot-qr-box {
+    display: none;
+    width: fit-content;
+    max-width: 100%;
+    margin: 25px auto;
+    padding: 14px;
+    background: white;
+    border-radius: 14px;
+}
+
+#whatsapp-bot-qr {
+    display: block;
+    width: min(360px, calc(100vw - 190px), calc(100vh - 390px));
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 600px), (max-height: 700px) {
+    .whatsapp-bot-container {
+        padding: 16px;
+    }
+
+    .whatsapp-bot-card {
+        padding: 18px;
+    }
+
+    #whatsapp-bot-qr-box {
+        margin: 16px auto;
+        padding: 10px;
+    }
+
+    #whatsapp-bot-qr {
+        width: min(300px, calc(100vw - 140px));
+    }
+}
+
 /* ==========================================
     3. TELA DE PEDIDOS (KDS)
 ========================================== */

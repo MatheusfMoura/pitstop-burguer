@@ -16,5 +16,8 @@
     "express": "^5.2.1",
     "firebase-admin": "^13.8.0",
     "mongoose": "^9.5.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1"
   }
 }

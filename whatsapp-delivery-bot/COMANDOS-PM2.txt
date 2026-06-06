@@ -1,0 +1,91 @@
+COMANDOS PM2 - WHATSAPP DELIVERY BOT
+====================================
+
+Entrar na pasta do bot:
+
+cd /home/charmes/pitstop-burguer/whatsapp-delivery-bot
+
+
+STATUS E LOGS
+-------------
+
+Ver status de todos os processos:
+
+pm2 status
+
+Ver logs do bot em tempo real:
+
+pm2 logs whatsapp-delivery
+
+Ver somente as ultimas 50 linhas dos logs:
+
+pm2 logs whatsapp-delivery --lines 50 --nostream
+
+Ver informacoes detalhadas do bot:
+
+pm2 show whatsapp-delivery
+
+Abrir monitor em tempo real:
+
+pm2 monit
+
+
+INICIAR, PARAR E REINICIAR
+--------------------------
+
+Parar o bot:
+
+pm2 stop whatsapp-delivery
+
+Iniciar um bot que esta parado:
+
+pm2 start whatsapp-delivery
+
+Reiniciar o bot:
+
+pm2 restart whatsapp-delivery
+
+Reiniciar atualizando variaveis de ambiente:
+
+pm2 restart whatsapp-delivery --update-env
+
+
+REMOVER E CADASTRAR NOVAMENTE
+-----------------------------
+
+Remover o bot do PM2:
+
+pm2 delete whatsapp-delivery
+
+Iniciar e cadastrar novamente:
+
+pm2 start server.js --name whatsapp-delivery
+
+
+INICIALIZACAO AUTOMATICA
+------------------------
+
+Salvar a lista atual de processos:
+
+pm2 save
+
+Configurar o PM2 para iniciar junto com a VPS:
+
+pm2 startup
+
+Execute tambem o comando adicional exibido pelo PM2 depois de rodar
+"pm2 startup".
+
+
+MANUTENCAO
+----------
+
+Limpar os logs do PM2:
+
+pm2 flush
+
+Depois de alterar o codigo do bot:
+
+pm2 restart whatsapp-delivery
+pm2 logs whatsapp-delivery --lines 50
+

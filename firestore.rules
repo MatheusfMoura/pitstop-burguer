@@ -1,0 +1,132 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.admin == true;
+    }
+
+    function isEntregadorDoPedido() {
+      return request.auth != null
+        && request.auth.token.entregador == true
+        && request.auth.token.entregadorNome == resource.data.entregador;
+    }
+
+    function nonEmptyString(value, maxLength) {
+      return value is string
+        && value.size() > 0
+        && value.size() <= maxLength;
+    }
+
+    function optionalString(value, maxLength) {
+      return value == null
+        || (value is string && value.size() <= maxLength);
+    }
+
+    function validOrderTimestamp(value) {
+      return value is timestamp || value is number;
+    }
+
+    function validPublicOrderCreate() {
+      return request.resource.data.keys().hasAll([
+          'cliente',
+          'whatsapp',
+          'tipo',
+          'endereco',
+          'pagamento',
+          'observacoes',
+          'subtotal',
+          'taxaEntrega',
+          'totalGeral',
+          'itens',
+          'status',
+          'dataCriacao'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'cliente',
+          'whatsapp',
+          'tipo',
+          'endereco',
+          'pagamento',
+          'observacoes',
+          'subtotal',
+          'taxaEntrega',
+          'totalGeral',
+          'itens',
+          'status',
+          'dataCriacao'
+        ])
+        && request.resource.data.status == 'Pendente'
+        && request.resource.data.tipo in ['entrega', 'retirada', 'local']
+        && request.resource.data.pagamento in [
+          'dinheiro',
+          'cartao-credito',
+          'cartao-debito',
+          'pix-manual',
+          'pix-app',
+          'cartao-app',
+          'pagar-na-entrega'
+        ]
+        && nonEmptyString(request.resource.data.cliente, 80)
+        && nonEmptyString(request.resource.data.whatsapp, 30)
+        && nonEmptyString(request.resource.data.endereco, 180)
+        && optionalString(request.resource.data.observacoes, 500)
+        && nonEmptyString(request.resource.data.subtotal, 30)
+        && nonEmptyString(request.resource.data.taxaEntrega, 30)
+        && nonEmptyString(request.resource.data.totalGeral, 30)
+        && request.resource.data.itens is list
+        && request.resource.data.itens.size() > 0
+        && request.resource.data.itens.size() <= 50
+        && validOrderTimestamp(request.resource.data.dataCriacao);
+    }
+
+    match /produtos/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /bairros/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /adicionais_global/{document=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /configuracoes/loja {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /configuracoes/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /pedidos/{pedido} {
+      allow get: if true;
+      allow list: if isAdmin() || isEntregadorDoPedido();
+      allow create: if isAdmin() || validPublicOrderCreate();
+      allow update: if isAdmin()
+        || (isEntregadorDoPedido()
+          && resource.data.status == 'Saiu para Entrega'
+          && request.resource.data.status == 'Finalizado'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow delete: if isAdmin();
+    }
+
+    match /insumos/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /motoboys/{document=**} {
+      allow read, write: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

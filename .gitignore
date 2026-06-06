@@ -1,14 +1,19 @@
 # Ignorar dependências do Node
 node_modules/
 backend/node_modules/
+whatsapp-delivery-bot/node_modules/
+.wwebjs_auth/
+whatsapp-delivery-bot/.wwebjs_auth/
+.wwebjs_cache/
+whatsapp-delivery-bot/.wwebjs_cache/
 
-# 🚨 Ignorar chaves de segurança e variáveis de ambiente 🚨
 firebase-key.json
-backend/firebase-key.json
-.env
-backend/.env
+
 
 # Ignorar arquivos de log e sistema
 npm-debug.log
+firebase-debug.log
 .DS_Store
 Thumbs.db
+e-key.json
+firebase-key.json

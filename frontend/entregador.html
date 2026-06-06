@@ -79,9 +79,7 @@
             <h2 style="margin-top: 0; color: white;">Bem-vindo!</h2>
             <p style="color: #aaa; font-size: 14px;">Identifique-se para acessar suas entregas:</p>
             
-            <select id="select-motoboy" class="select-perfil">
-                <option value="">Carregando lista...</option>
-            </select>
+            <input type="text" id="nome-motoboy" class="select-perfil" placeholder="Seu nome cadastrado">
 
             <input type="password" id="input-senha-moto" class="input-senha" placeholder="Senha (Seu Telefone)">
 
@@ -108,6 +106,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, query, onSnapshot, doc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, getIdTokenResult, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyCUjBWv40J0Mp6KsHzWxOwz6hNyWDHOYT8",
@@ -120,25 +119,33 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
+        const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+        const escapeAttr = escapeHTML;
+        const jsArg = (value) => escapeAttr(JSON.stringify(String(value ?? '')));
 
-        let meuNome = localStorage.getItem('motoboy_nome');
-        const taxaPorEntrega = 5.00; 
-        
-        let listaMotoboys = [];
+        let meuNome = null;
+        let pararRastreador = null;
+        let validandoUsuario = false;
+        let rastreadorNome = null;
 
-        // 1. CARREGAR LISTA DE MOTOBOYS
-        onSnapshot(collection(db, "motoboys"), (snapshot) => {
-            const select = document.getElementById('select-motoboy');
-            select.innerHTML = '<option value="">Selecione seu nome...</option>';
-            listaMotoboys = [];
+        function emailTecnicoMotoboy(nome) {
+            const identificador = String(nome || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '.')
+                .replace(/^\.+|\.+$/g, '');
 
-            snapshot.forEach(doc => {
-                const m = doc.data();
-                listaMotoboys.push(m);
-                select.innerHTML += `<option value="${m.nome}">${m.nome}</option>`;
-            });
-            verificarLogin();
-        });
+            if (!identificador) throw new Error('Nome de entregador inválido');
+            return `${identificador}@entregadores.pitstop.local`;
+        }
 
         function verificarLogin() {
             if (meuNome) {
@@ -152,23 +159,22 @@
             }
         }
 
-        window.tentarLogin = function() {
-            const nomeSelecionado = document.getElementById('select-motoboy').value;
+        window.tentarLogin = async function() {
+            const nomeSelecionado = document.getElementById('nome-motoboy').value.trim();
             const senhaDigitada = document.getElementById('input-senha-moto').value.trim();
 
-            if (!nomeSelecionado) return alert("Por favor, selecione o seu nome na lista!");
+            if (!nomeSelecionado) return alert("Informe o seu nome cadastrado!");
             if (!senhaDigitada) return alert("Por favor, digite a sua senha!");
 
-            const motoboyCadastrado = listaMotoboys.find(m => m.nome === nomeSelecionado);
-            const telefoneLimpoBanco = motoboyCadastrado.telefone.replace(/\D/g, '');
-            const senhaLimpaDigitada = senhaDigitada.replace(/\D/g, '');
-
-            if (telefoneLimpoBanco === senhaLimpaDigitada) {
-                localStorage.setItem('motoboy_nome', nomeSelecionado);
-                meuNome = nomeSelecionado;
-                verificarLogin();
-            } else {
-                alert("Senha incorreta! Digite os números do seu telefone exatamente como foi cadastrado.");
+            try {
+                await signInWithEmailAndPassword(
+                    auth,
+                    emailTecnicoMotoboy(nomeSelecionado),
+                    senhaDigitada.replace(/\D/g, '')
+                );
+            } catch (erro) {
+                console.error('Falha no login do entregador:', erro);
+                alert("Nome ou senha incorretos.");
             }
         }
 
@@ -178,9 +184,12 @@
 
         // 2. BUSCAR ENTREGAS DO MOTOBOY LOGADO
         function iniciarRastreadorTrabalho() {
+            if (rastreadorNome === meuNome && pararRastreador) return;
+            if (pararRastreador) pararRastreador();
+            rastreadorNome = meuNome;
             const q = query(collection(db, "pedidos"), where("entregador", "==", meuNome));
 
-            onSnapshot(q, (snapshot) => {
+            pararRastreador = onSnapshot(q, (snapshot) => {
                 const lista = document.getElementById('lista-cards');
                 lista.innerHTML = '';
                 let contagemGeral = 0;
@@ -213,10 +222,12 @@
                         const enderecoCompleto = pedido.endereco + ", Cruzeiro do Sul - AC";
                         const linkMaps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(enderecoCompleto)}`;
                         
-                        const linkWhats = `https://api.whatsapp.com/send?phone=55${whatsLimpo}&text=Olá ${pedido.cliente}, sou o entregador do Pitstop Burguer! Estou a caminho com o seu pedido.`;
+                        const textoWhats = `Olá ${pedido.cliente}, sou o entregador do Pitstop Burguer! Estou a caminho com o seu pedido.`;
+                        const linkWhats = `https://api.whatsapp.com/send?phone=55${whatsLimpo}&text=${encodeURIComponent(textoWhats)}`;
 
                         // Lógica visual: Se for para cobrar no local, a tag fica vermelha chamativa!
-                        const cobrarNoLocal = (pedido.pagamento === 'pagar-na-entrega' || pedido.pagamento === 'dinheiro' || pedido.pagamento.includes('cartao'));
+                        const pagamentoPedido = String(pedido.pagamento ?? '');
+                        const cobrarNoLocal = (pagamentoPedido === 'pagar-na-entrega' || pagamentoPedido === 'dinheiro' || pagamentoPedido.includes('cartao'));
                         const corPagamento = cobrarNoLocal ? 'var(--text-red)' : 'var(--accent-green)';
                         const textoPagamento = cobrarNoLocal ? '⚠️ COBRAR DO CLIENTE' : '✅ JÁ PAGO NO APP';
 
@@ -224,28 +235,28 @@
                             <div class="card">
                                 <span class="status-badge"><span class="material-symbols-outlined" style="font-size: 14px;">two_wheeler</span> A CAMINHO</span>
                                 
-                                <h3 class="card-nome">${pedido.cliente}</h3>
+                                <h3 class="card-nome">${escapeHTML(pedido.cliente)}</h3>
                                 
                                 <div class="card-end">
                                     <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; color: var(--text-muted);">location_on</span>
-                                    ${pedido.endereco}
+                                    ${escapeHTML(pedido.endereco)}
                                 </div>
                                 
                                 <div class="price-box">
                                     <span class="price-label" style="color: ${corPagamento};">${textoPagamento}</span>
-                                    <span class="price-value">${pedido.totalGeral}</span>
+                                    <span class="price-value">${escapeHTML(pedido.totalGeral)}</span>
                                 </div>
 
                                 <div style="display: flex; gap: 10px;">
-                                    <a href="${linkMaps}" target="_blank" class="btn-acao btn-rota">
+                                    <a href="${escapeAttr(linkMaps)}" target="_blank" rel="noopener noreferrer" class="btn-acao btn-rota">
                                         <span class="material-symbols-outlined" style="font-size: 20px;">navigation</span> Mapa
                                     </a>
-                                    <a href="${linkWhats}" target="_blank" class="btn-acao btn-whats">
+                                    <a href="${escapeAttr(linkWhats)}" target="_blank" rel="noopener noreferrer" class="btn-acao btn-whats">
                                         <span class="material-symbols-outlined" style="font-size: 20px;">chat</span> Mensagem
                                     </a>
                                 </div>
 
-                                <button class="btn-acao btn-concluir" onclick="finalizarEntrega('${id}')">
+                                <button class="btn-acao btn-concluir" onclick="finalizarEntrega(${jsArg(id)})">
                                     <span class="material-symbols-outlined" style="font-size: 22px;">check_circle</span> Confirmar Entrega
                                 </button>
                             </div>
@@ -271,6 +282,9 @@
                 if (entregasAtivas === 0) {
                     lista.innerHTML = '<div style="text-align:center; padding:40px; color:#666;">Tudo limpo! Aguardando novos pedidos... 🥤</div>';
                 }
+            }, (erro) => {
+                console.error('Erro ao carregar entregas:', erro);
+                document.getElementById('lista-cards').innerHTML = '<div style="text-align:center; padding:40px; color:#f85149;">Não foi possível carregar suas entregas. Entre novamente.</div>';
             });
         }
 
@@ -280,13 +294,46 @@
             }
         }
 
-        window.sairDoApp = function() {
+        window.sairDoApp = async function() {
             if(confirm("Deseja sair da sua conta?")) {
-                localStorage.removeItem('motoboy_nome');
+                if (pararRastreador) pararRastreador();
+                await signOut(auth);
                 meuNome = null;
-                location.reload(); // Recarrega a página para voltar ao Login
+                location.reload();
             }
         }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (validandoUsuario) return;
+
+            if (!user) {
+                if (pararRastreador) pararRastreador();
+                pararRastreador = null;
+                rastreadorNome = null;
+                meuNome = null;
+                verificarLogin();
+                return;
+            }
+
+            validandoUsuario = true;
+            try {
+                const token = await getIdTokenResult(user, true);
+                if (token.claims.entregador !== true || !token.claims.entregadorNome) {
+                    await signOut(auth);
+                    throw new Error('Conta sem permissão de entregador');
+                }
+
+                meuNome = String(token.claims.entregadorNome);
+                verificarLogin();
+            } catch (erro) {
+                console.error('Falha ao validar entregador:', erro);
+                await signOut(auth);
+                meuNome = null;
+                verificarLogin();
+            } finally {
+                validandoUsuario = false;
+            }
+        });
         
     </script>
 </body>

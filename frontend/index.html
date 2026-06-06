@@ -312,6 +312,18 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+        const escapeAttr = escapeHTML;
+        const safeNumber = (value, fallback = 0) => {
+            const num = Number(value);
+            return Number.isFinite(num) ? num : fallback;
+        };
 
         // --- SISTEMA DE TAXA POR BAIRRO COM ORDEM ALFABÉTICA ---
         let listaBairrosGlobal = [];
@@ -332,7 +344,10 @@
 
             // 3. Renderiza as opções já ordenadas
             listaBairrosGlobal.forEach(b => {
-                select.innerHTML += `<option value="${b.nome}">${b.nome}</option>`;
+                const option = document.createElement('option');
+                option.value = String(b.nome ?? '');
+                option.textContent = String(b.nome ?? '');
+                select.appendChild(option);
             });
         });
 
@@ -511,9 +526,9 @@
                     listaHTML.innerHTML += `
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px;">
                             <span style="color: #ddd; max-width: 75%; line-height: 1.4;">
-                                <strong style="color: white;">${item.quantidade}x</strong> ${item.nome}
+                                <strong style="color: white;">${safeNumber(item.quantidade, 1)}x</strong> ${escapeHTML(item.nome)}
                             </span>
-                            <span style="color: #aaa;">R$ ${precoItem}</span>
+                            <span style="color: #aaa;">R$ ${escapeHTML(precoItem)}</span>
                         </div>
                     `;
                 });
@@ -524,7 +539,7 @@
                 listaHTML.innerHTML += `
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; font-size: 13px; margin-top: 5px; border-top: 1px dashed #333; padding-top: 8px;">
                         <span style="color: #aaa;">Taxa de Entrega</span>
-                        <span style="color: #aaa;">${dadosDoPedidoAtual.taxaEntrega}</span>
+                        <span style="color: #aaa;">${escapeHTML(dadosDoPedidoAtual.taxaEntrega)}</span>
                     </div>
                 `;
             }
