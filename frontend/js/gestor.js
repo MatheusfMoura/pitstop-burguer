@@ -26,6 +26,15 @@ const safeNumber = (value, fallback = 0) => {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
 };
+const timestampToMillis = (value) => {
+    if (typeof value === 'number') return value;
+    if (value?.toMillis) return value.toMillis();
+    if (typeof value?.seconds === 'number') {
+        return (value.seconds * 1000) + Math.floor((value.nanoseconds || 0) / 1000000);
+    }
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) ? parsed : 0;
+};
 const jsArg = (value) => escapeAttr(JSON.stringify(String(value ?? '')));
 const stripPersonalizado = (value) => String(value ?? '').replace(' (Personalizado)', '');
 
@@ -545,7 +554,7 @@ window.abrirGaveta = function(id) {
 
     let dataPedidoFormatada = "";
     if(pedido.dataCriacao) {
-        const d = new Date(pedido.dataCriacao);
+        const d = new Date(timestampToMillis(pedido.dataCriacao));
         dataPedidoFormatada = d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     }
 
@@ -792,6 +801,7 @@ window.despacharComMotoboy = async function(id) {
 // 🖨️ MEMÓRIA DA IMPRESSORA AUTOMÁTICA E FILA INTELIGENTE
 let pedidosJaImpressos = new Set();
 let primeiraCargaDoPainel = true;
+const inicioDoRadarImpressao = Date.now();
 
 window.filaDeImpressao = [];
 window.caixaOcupado = false; // A trava que impede o congelamento!
@@ -802,7 +812,7 @@ window.solicitarImpressao = function(id) {
         if(!window.filaDeImpressao.includes(id)) window.filaDeImpressao.push(id);
     } else {
         // Se o caixa estiver livre, imprime na hora
-        imprimirComanda(id);
+        window.imprimirComanda(id);
     }
 }
 
@@ -810,7 +820,7 @@ window.liberarFilaDeImpressao = function() {
     if (window.filaDeImpressao.length > 0) {
         // Pega no pedido mais antigo retido na fila e tira-o de lá
         const idParaImprimir = window.filaDeImpressao.shift();
-        imprimirComanda(idParaImprimir);
+        window.imprimirComanda(idParaImprimir);
         
         // Espera 2.5 segundos e tenta imprimir o próximo para não engasgar a máquina
         setTimeout(window.liberarFilaDeImpressao, 2500);
@@ -833,24 +843,26 @@ onSnapshot(qPedidos, (snapshot) => {
 
     snapshot.forEach((documento) => {
         const pedido = documento.data(); const id = documento.id;
+        const criadoEmMillis = timestampToMillis(pedido.dataCriacao);
         
         // 🚨 FILTRO DE TURNO: Se o pedido foi feito antes do caixa abrir, ignora e pula pro próximo!
-        if (pedido.dataCriacao < timestampAberturaCaixa) return; 
+        if (criadoEmMillis < timestampAberturaCaixa) return; 
         
         // Carimba no pedido o número exato dele no dia e soma +1 para o próximo
         pedido.numeroDiario = contadorDiario++; 
 
+        dadosCompletosMemoria[id] = pedido;
+
         // ==========================================
         // 🖨️ GATILHO: SE CHEGOU PEDIDO NOVO, VAI PARA A FILA!
         // ==========================================
-        if (!primeiraCargaDoPainel && (pedido.status === "Pendente" || pedido.status === "Em Preparo") && !pedidosJaImpressos.has(id)) {
-            // Agora ele manda para o nosso sistema inteligente em vez de imprimir direto
-            setTimeout(() => { solicitarImpressao(id); }, 1500); 
+        const pedidoCriadoComRadarLigado = criadoEmMillis >= inicioDoRadarImpressao;
+        if ((!primeiraCargaDoPainel || pedidoCriadoComRadarLigado) && (pedido.status === "Pendente" || pedido.status === "Em Preparo") && !pedidosJaImpressos.has(id)) {
+            // Garante que a comanda use o pedido já salvo na memória local.
+            setTimeout(() => { window.solicitarImpressao(id); }, 1500); 
         }
         pedidosJaImpressos.add(id); 
         // ==========================================
-
-        dadosCompletosMemoria[id] = pedido;
         
         if(pedido.totalGeral) {
             let numValor = parseFloat(pedido.totalGeral.replace('R$','').replace('.','').replace(',','.'));
@@ -875,7 +887,7 @@ onSnapshot(qPedidos, (snapshot) => {
         card.innerHTML = `
             <div class="card-top" style="margin-bottom: 10px;">
                 <span class="tag ${tagClass}" style="padding: 4px 8px;">${tagTxt}</span>
-                <span class="card-timer" style="font-size: 11px;">⏰ ${new Date(pedido.dataCriacao).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                <span class="card-timer" style="font-size: 11px;">⏰ ${new Date(criadoEmMillis).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
             </div>
             <div class="card-client" style="font-size: 16px; margin-bottom: 8px;">${escapeHTML(pedido.cliente || 'Sem Nome')}</div>
             ${resumoItens}
@@ -1431,7 +1443,7 @@ window.imprimirComanda = function(id) {
     // Formata a data
     let dataFormatada = "";
     if(pedido.dataCriacao) {
-        const d = new Date(pedido.dataCriacao);
+        const d = new Date(timestampToMillis(pedido.dataCriacao));
         dataFormatada = d.toLocaleDateString('pt-BR') + ' às ' + d.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     }
 

@@ -192,6 +192,16 @@
                             <div id="box-ingredientes-temp"></div>
                         </div>
 
+                        <div class="builder-box">
+                            <label style="font-size: 12px; color: var(--text-green); display: block; margin-bottom: 8px;">Adicionais deste Item (Opcional)</label>
+                            <div class="linha-add">
+                                <input type="text" id="in-add-nome" class="input-padrao" placeholder="Ex: Bacon Extra" style="padding: 6px; flex: 2;">
+                                <input type="number" id="in-add-preco" class="input-padrao" placeholder="R$" style="padding: 6px; flex: 1;">
+                                <button onclick="adicionarAdicionalTemp()" style="background: var(--text-green); color: black; border: none; border-radius: 4px; padding: 0 15px; cursor:pointer; font-weight: bold;">+</button>
+                            </div>
+                            <div id="box-adicionais-temp" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 5px;"></div>
+                        </div>
+
                         <div class="builder-box" id="box-builder-tamanhos" style="display: none;">
                             <label style="font-size: 12px; color: var(--text-orange); display: block; margin-bottom: 8px;">Tamanhos / Variações (Ex: P, M, G)</label>
                             <div class="linha-add">

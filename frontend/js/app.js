@@ -232,6 +232,19 @@ window.abrirModalProduto = function(id) {
         listaAdicionais.innerHTML = htmlOpcoes;
     }
 
+    // --- ADICIONAIS DO PRÓPRIO PRODUTO ---
+    if(produtoSelecionado.adicionais && produtoSelecionado.adicionais.length > 0) {
+        listaAdicionais.innerHTML += `<h4 style="margin-bottom: 12px; color: #fff; border-top: 1px solid #333; padding-top: 15px; margin-top: 10px;">Adicionais deste Item</h4>`;
+        produtoSelecionado.adicionais.forEach((add, index) => {
+            const precoAdd = safeNumber(add.preco);
+            listaAdicionais.innerHTML += `
+                <div class="item-adicional" style="margin-bottom: 8px;">
+                    <label for="add-prod-${index}">${escapeHTML(add.nome)} (+ R$ ${precoAdd.toFixed(2).replace('.',',')})</label>
+                    <input type="checkbox" id="add-prod-${index}" data-preco="${precoAdd}" data-nome="${escapeAttr(add.nome)}" onchange="atualizarPrecoModal()">
+                </div>`;
+        });
+    }
+
     // --- ADICIONAIS GLOBAIS (AUTOMÁTICOS PARA TODOS OS LANCHES) ---
     if(window.adicionaisGlobaisMemoria && window.adicionaisGlobaisMemoria.length > 0) {
         listaAdicionais.innerHTML += `<h4 style="margin-bottom: 12px; color: #fff; border-top: 1px solid #333; padding-top: 15px; margin-top: 10px;">Turbine seu Lanche</h4>`;
